@@ -207,7 +207,7 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                       ElevatedButton(
                         onPressed: () {
-                          // TODO: Navigate to login
+          
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blue[100],
