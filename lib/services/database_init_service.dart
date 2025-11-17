@@ -3,98 +3,94 @@ import 'package:firebase_database/firebase_database.dart';
 class DatabaseInitService {
   final DatabaseReference _db = FirebaseDatabase.instance.ref();
 
- // Initialize structure with dummy records
-Future<void> initializeStructure() async {
-  try {
-    // Add at least one record to each collection so they appear in Firebase
-    // Then users can add more data in the app
-    
-    // Users collection
-    await _db.child('users').child('user_placeholder').set({
-      'userId': 'user_placeholder',
-      'username': 'placeholder_user',
-      'email': 'placeholder@example.com',
-      'role': 'user',
-    });
+  // Initialize structure with dummy records
+  Future<void> initializeStructure() async {
+    try {
+      // Users collection
+      await _db.child('users').child('user_placeholder').set({
+        'userId': 'user_placeholder',
+        'username': 'placeholder_user',
+        'email': 'placeholder@example.com',
+        'role': 'user',
+      });
 
-    // Searches collection  
-    await _db.child('searches').child('search_placeholder').set({
-      'searchId': 'search_placeholder',
-      'userId': 'user_placeholder',
-      'fishId': 'fish_1',
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
+      // Searches collection  
+      await _db.child('searches').child('search_placeholder').set({
+        'searchId': 'search_placeholder',
+        'userId': 'user_placeholder',
+        'fishId': 'fish_1',
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
 
-    // Posts collection
-    await _db.child('posts').child('post_placeholder').set({
-      'postId': 'post_placeholder',
-      'userId': 'user_placeholder',
-      'likes': 0,
-      'views': 0,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
+      // Posts collection
+      await _db.child('posts').child('post_placeholder').set({
+        'postId': 'post_placeholder',
+        'userId': 'user_placeholder',
+        'likes': 0,
+        'views': 0,
+        'timestamp': DateTime.now().millisecondsSinceEpoch,
+      });
 
-    print('✅ Collections created with placeholder data');
-  } catch (e) {
-    print('❌ Error initializing structure: $e');
+      print('✅ Collections created with placeholder data');
+    } catch (e) {
+      print('❌ Error initializing structure: $e');
+    }
   }
-}
 
-
-  // Initialize Fish - 50 Philippine Fish (DUMMY DATA)
+  // Initialize Fish - 50 Philippine Fish (with LOCAL image paths)
   Future<void> initializeFish() async {
     try {
       List<Map<String, dynamic>> fishData = [
-        {'fishId': 'fish_1', 'commonName': 'Yellowfin Tuna', 'scientificName': 'Thunnus albacares', 'localName': 'Tambakol', 'habitat': 'Saltwater', 'information': 'Blue back, yellow sides, size 100-150cm'},
-        {'fishId': 'fish_2', 'commonName': 'Gray Snapper', 'scientificName': 'Lutjanus griseus', 'localName': 'Maya-maya', 'habitat': 'Saltwater', 'information': 'Gray body, size 25-40cm'},
-        {'fishId': 'fish_3', 'commonName': 'Goldstripe Sardinella', 'scientificName': 'Hyperlophus vittatus', 'localName': 'Sardinella', 'habitat': 'Saltwater', 'information': 'Silver with gold stripe, size 15-20cm'},
-        {'fishId': 'fish_4', 'commonName': 'Long-jawed Mackerel', 'scientificName': 'Rastrelliger kanagurta', 'localName': 'Alumahan', 'habitat': 'Saltwater', 'information': 'Blue-green back, silver belly, size 30-35cm'},
-        {'fishId': 'fish_5', 'commonName': 'Mackerel Scad', 'scientificName': 'Decapterus sp', 'localName': 'Galunggong', 'habitat': 'Saltwater', 'information': 'Silver body, forked tail, size 20-25cm'},
-        {'fishId': 'fish_6', 'commonName': 'Threadfin Bream', 'scientificName': 'Nemipterus japonicus', 'localName': 'Bisugo', 'habitat': 'Saltwater', 'information': 'Pink-red coloring, size 20-25cm'},
-        {'fishId': 'fish_7', 'commonName': 'Leopard Coral Grouper', 'scientificName': 'Epinephelus sp', 'localName': 'Lapu-lapu', 'habitat': 'Saltwater', 'information': 'Orange-red with white streaks, size 40-60cm'},
-        {'fishId': 'fish_8', 'commonName': 'Nile Tilapia', 'scientificName': 'Oreochromis niloticus', 'localName': 'Tilapia', 'habitat': 'Freshwater', 'information': 'Golden coloring, size 20-30cm'},
-        {'fishId': 'fish_9', 'commonName': 'Milkfish', 'scientificName': 'Chanos chanos', 'localName': 'Bangus', 'habitat': 'Saltwater/Freshwater', 'information': 'Silver body, size 30-40cm'},
-        {'fishId': 'fish_10', 'commonName': 'Striped Snakehead', 'scientificName': 'Channa striata', 'localName': 'Dalag', 'habitat': 'Freshwater', 'information': 'Striped pattern, size 30-45cm'},
-        {'fishId': 'fish_11', 'commonName': 'Common Carp', 'scientificName': 'Cyprinus carpio', 'localName': 'Carp', 'habitat': 'Freshwater', 'information': 'Brown-gold coloring, size 40-60cm'},
-        {'fishId': 'fish_12', 'commonName': 'Asian Catfish', 'scientificName': 'Clarias batrachus', 'localName': 'Catfish', 'habitat': 'Freshwater', 'information': 'Dark body, whiskers, size 25-35cm'},
-        {'fishId': 'fish_13', 'commonName': 'Manila Catfish', 'scientificName': 'Arius manillensis', 'localName': 'Kanduli', 'habitat': 'Freshwater', 'information': 'Dark body, large pectoral spines, size 20-30cm'},
-        {'fishId': 'fish_14', 'commonName': 'White Goby', 'scientificName': 'Glossogobius giuris', 'localName': 'Puting biya', 'habitat': 'Freshwater', 'information': 'White-gray body, size 10-15cm'},
-        {'fishId': 'fish_15', 'commonName': 'Silver Perch', 'scientificName': 'Leiopotherapon plumbeus', 'localName': 'Ayuñgin', 'habitat': 'Freshwater', 'information': 'Silver body, size 15-20cm'},
-        {'fishId': 'fish_16', 'commonName': 'Giant Gourami', 'scientificName': 'Osphronemus goramy', 'localName': 'Gourami', 'habitat': 'Freshwater', 'information': 'Large, robust body, size 50-60cm'},
-        {'fishId': 'fish_17', 'commonName': 'Mudfish', 'scientificName': 'Oxyeleotris marmoratus', 'localName': 'Mudfish', 'habitat': 'Freshwater', 'information': 'Dark body, size 30-40cm'},
-        {'fishId': 'fish_18', 'commonName': 'Climbing Perch', 'scientificName': 'Anabas testudineus', 'localName': 'Climbing Perch', 'habitat': 'Freshwater', 'information': 'Brown body, can breathe air, size 20-25cm'},
-        {'fishId': 'fish_19', 'commonName': 'Trevally', 'scientificName': 'Carangidae spp', 'localName': 'Trevally', 'habitat': 'Saltwater', 'information': 'Silver body, size 30-50cm'},
-        {'fishId': 'fish_20', 'commonName': 'Grouper', 'scientificName': 'Serranidae spp', 'localName': 'Grouper', 'habitat': 'Saltwater', 'information': 'Various colors, size 40-80cm'},
-        {'fishId': 'fish_21', 'commonName': 'Red Snapper', 'scientificName': 'Lutjanidae spp', 'localName': 'Snapper', 'habitat': 'Saltwater', 'information': 'Red-pink body, size 25-40cm'},
-        {'fishId': 'fish_22', 'commonName': 'Goatfish', 'scientificName': 'Mullidae spp', 'localName': 'Goatfish', 'habitat': 'Saltwater', 'information': 'Yellow-red body, barbels, size 20-30cm'},
-        {'fishId': 'fish_23', 'commonName': 'Emperor', 'scientificName': 'Lethrinus lentjan', 'localName': 'Bitilya', 'habitat': 'Saltwater', 'information': 'Blue-green back, size 35-50cm'},
-        {'fishId': 'fish_24', 'commonName': 'Indo-Pacific Tarpon', 'scientificName': 'Megalops cyprinoides', 'localName': 'Buan-buan', 'habitat': 'Saltwater', 'information': 'Large silver body, size 80-100cm'},
-        {'fishId': 'fish_25', 'commonName': 'Dolphinfish', 'scientificName': 'Coryphaena hippurus', 'localName': 'Dorado', 'habitat': 'Saltwater', 'information': 'Golden-green coloring, size 50-80cm'},
-        {'fishId': 'fish_26', 'commonName': 'Threadfin Salmon', 'scientificName': 'Eleutheronema tetradactylum', 'localName': 'Salmon', 'habitat': 'Saltwater', 'information': 'Silver body, size 80-120cm'},
-        {'fishId': 'fish_27', 'commonName': 'Red Bigeye', 'scientificName': 'Priacanthus macracanthus', 'localName': 'Dilat', 'habitat': 'Saltwater', 'information': 'Red body, large eyes, size 15-20cm'},
-        {'fishId': 'fish_28', 'commonName': 'Moonfish', 'scientificName': 'Mene maculata', 'localName': 'Chabeta', 'habitat': 'Saltwater', 'information': 'Disc-shaped, silver body, size 15-20cm'},
-        {'fishId': 'fish_29', 'commonName': 'Rabbit Fish', 'scientificName': 'Siganus sp', 'localName': 'Rabbit Fish', 'habitat': 'Saltwater', 'information': 'Brown-green body, size 25-30cm'},
-        {'fishId': 'fish_30', 'commonName': 'Surgeonfish', 'scientificName': 'Acanthurus sp', 'localName': 'Surgeonfish', 'habitat': 'Saltwater', 'information': 'Colorful body, sharp spines, size 20-30cm'},
-        {'fishId': 'fish_31', 'commonName': 'Butterflyfish', 'scientificName': 'Chaetodon sp', 'localName': 'Butterflyfish', 'habitat': 'Saltwater', 'information': 'Colorful patterned body, size 15-20cm'},
-        {'fishId': 'fish_32', 'commonName': 'Damselfish', 'scientificName': 'Pomacentridae sp', 'localName': 'Damselfish', 'habitat': 'Saltwater', 'information': 'Bright colored, size 10-15cm'},
-        {'fishId': 'fish_33', 'commonName': 'Wrasse', 'scientificName': 'Labridae sp', 'localName': 'Wrasse', 'habitat': 'Saltwater', 'information': 'Colorful body, size 20-30cm'},
-        {'fishId': 'fish_34', 'commonName': 'Parrotfish', 'scientificName': 'Scaridae sp', 'localName': 'Parrotfish', 'habitat': 'Saltwater', 'information': 'Colorful body, beak-like mouth, size 25-35cm'},
-        {'fishId': 'fish_35', 'commonName': 'Sweetlip', 'scientificName': 'Haemulidae sp', 'localName': 'Sweetlip', 'habitat': 'Saltwater', 'information': 'Striped pattern, size 30-40cm'},
-        {'fishId': 'fish_36', 'commonName': 'Barracuda', 'scientificName': 'Sphyraena sp', 'localName': 'Barracuda', 'habitat': 'Saltwater', 'information': 'Elongated body, sharp teeth, size 50-80cm'},
-        {'fishId': 'fish_37', 'commonName': 'Jack', 'scientificName': 'Caranx sp', 'localName': 'Jack', 'habitat': 'Saltwater', 'information': 'Silver body, size 30-50cm'},
-        {'fishId': 'fish_38', 'commonName': 'Asian Seabass', 'scientificName': 'Lates calcarifer', 'localName': 'Barramundi', 'habitat': 'Saltwater/Freshwater', 'information': 'Silver body, large scales, size 60-100cm'},
-        {'fishId': 'fish_39', 'commonName': 'Eel', 'scientificName': 'Anguilla sp', 'localName': 'Eel', 'habitat': 'Freshwater/Saltwater', 'information': 'Long snake-like body, size 60-100cm'},
-        {'fishId': 'fish_40', 'commonName': 'Halfbeak', 'scientificName': 'Hemirhamphus sp', 'localName': 'Halfbeak', 'habitat': 'Saltwater', 'information': 'Silver body, half-long snout, size 20-25cm'},
-        {'fishId': 'fish_41', 'commonName': 'Needlefish', 'scientificName': 'Belonidae sp', 'localName': 'Needlefish', 'habitat': 'Saltwater', 'information': 'Elongated needle-like body, size 30-40cm'},
-        {'fishId': 'fish_42', 'commonName': 'Flying Fish', 'scientificName': 'Exocoetus sp', 'localName': 'Flying Fish', 'habitat': 'Saltwater', 'information': 'Can glide above water, size 20-30cm'},
-        {'fishId': 'fish_43', 'commonName': 'Seahorse', 'scientificName': 'Syngnathidae sp', 'localName': 'Seahorse', 'habitat': 'Saltwater', 'information': 'Horse-like head, prehensile tail, size 10-15cm'},
-        {'fishId': 'fish_44', 'commonName': 'Sea Dragon', 'scientificName': 'Hippocampus sp', 'localName': 'Sea Dragon', 'habitat': 'Saltwater', 'information': 'Leaf-like appendages, size 15-20cm'},
-        {'fishId': 'fish_45', 'commonName': 'Pufferfish', 'scientificName': 'Tetraodontidae sp', 'localName': 'Pufferfish', 'habitat': 'Saltwater', 'information': 'Can inflate body, toxic, size 10-20cm'},
-        {'fishId': 'fish_46', 'commonName': 'Porcupinefish', 'scientificName': 'Diodon sp', 'localName': 'Porcupinefish', 'habitat': 'Saltwater', 'information': 'Spines on body, size 20-30cm'},
-        {'fishId': 'fish_47', 'commonName': 'Boxfish', 'scientificName': 'Ostraciidae sp', 'localName': 'Boxfish', 'habitat': 'Saltwater', 'information': 'Cube-shaped body, size 10-20cm'},
-        {'fishId': 'fish_48', 'commonName': 'Pomfret', 'scientificName': 'Stromateidae sp', 'localName': 'Pomfret', 'habitat': 'Saltwater', 'information': 'Flat, disc-shaped, size 20-30cm'},
-        {'fishId': 'fish_49', 'commonName': 'Ribbonfish', 'scientificName': 'Trichiuridae sp', 'localName': 'Ribbonfish', 'habitat': 'Saltwater', 'information': 'Long ribbon-like body, size 100-150cm'},
-        {'fishId': 'fish_50', 'commonName': 'Spotted Scat', 'scientificName': 'Scatophagus argus', 'localName': 'Kitang', 'habitat': 'Brackish Water', 'information': 'Silver-bronze with black spots, size 15-20cm'},
+        {'fishId': 'fish_1', 'commonName': 'Yellowfin Tuna', 'scientificName': 'Thunnus albacares', 'localName': 'Tambakol', 'habitat': 'Saltwater', 'information': 'Blue back, yellow sides, size 100-150cm', 'imageUrl': 'assets/images/fish/fish (1).png'},
+        {'fishId': 'fish_2', 'commonName': 'Gray Snapper', 'scientificName': 'Lutjanus griseus', 'localName': 'Maya-maya', 'habitat': 'Saltwater', 'information': 'Gray body, size 25-40cm', 'imageUrl': 'assets/images/fish/fish (2).png'},
+        {'fishId': 'fish_3', 'commonName': 'Goldstripe Sardinella', 'scientificName': 'Hyperlophus vittatus', 'localName': 'Sardinella', 'habitat': 'Saltwater', 'information': 'Silver with gold stripe, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (3).png'},
+        {'fishId': 'fish_4', 'commonName': 'Long-jawed Mackerel', 'scientificName': 'Rastrelliger kanagurta', 'localName': 'Alumahan', 'habitat': 'Saltwater', 'information': 'Blue-green back, silver belly, size 30-35cm', 'imageUrl': 'assets/images/fish/fish (4).png'},
+        {'fishId': 'fish_5', 'commonName': 'Mackerel Scad', 'scientificName': 'Decapterus sp', 'localName': 'Galunggong', 'habitat': 'Saltwater', 'information': 'Silver body, forked tail, size 20-25cm', 'imageUrl': 'assets/images/fish/fish (5).png'},
+        {'fishId': 'fish_6', 'commonName': 'Threadfin Bream', 'scientificName': 'Nemipterus japonicus', 'localName': 'Bisugo', 'habitat': 'Saltwater', 'information': 'Pink-red coloring, size 20-25cm', 'imageUrl': 'assets/images/fish/fish (6).png'},
+        {'fishId': 'fish_7', 'commonName': 'Leopard Coral Grouper', 'scientificName': 'Epinephelus sp', 'localName': 'Lapu-lapu', 'habitat': 'Saltwater', 'information': 'Orange-red with white streaks, size 40-60cm', 'imageUrl': 'assets/images/fish/fish (7).png'},
+        {'fishId': 'fish_8', 'commonName': 'Nile Tilapia', 'scientificName': 'Oreochromis niloticus', 'localName': 'Tilapia', 'habitat': 'Freshwater', 'information': 'Golden coloring, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (8).png'},
+        {'fishId': 'fish_9', 'commonName': 'Milkfish', 'scientificName': 'Chanos chanos', 'localName': 'Bangus', 'habitat': 'Saltwater/Freshwater', 'information': 'Silver body, size 30-40cm', 'imageUrl': 'assets/images/fish/fish (9).png'},
+        {'fishId': 'fish_10', 'commonName': 'Striped Snakehead', 'scientificName': 'Channa striata', 'localName': 'Dalag', 'habitat': 'Freshwater', 'information': 'Striped pattern, size 30-45cm', 'imageUrl': 'assets/images/fish/fish (10).png'},
+        {'fishId': 'fish_11', 'commonName': 'Common Carp', 'scientificName': 'Cyprinus carpio', 'localName': 'Carp', 'habitat': 'Freshwater', 'information': 'Brown-gold coloring, size 40-60cm', 'imageUrl': 'assets/images/fish/fish (11).png'},
+        {'fishId': 'fish_12', 'commonName': 'Asian Catfish', 'scientificName': 'Clarias batrachus', 'localName': 'Catfish', 'habitat': 'Freshwater', 'information': 'Dark body, whiskers, size 25-35cm', 'imageUrl': 'assets/images/fish/fish (12).png'},
+        {'fishId': 'fish_13', 'commonName': 'Manila Catfish', 'scientificName': 'Arius manillensis', 'localName': 'Kanduli', 'habitat': 'Freshwater', 'information': 'Dark body, large pectoral spines, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (13).png'},
+        {'fishId': 'fish_14', 'commonName': 'White Goby', 'scientificName': 'Glossogobius giuris', 'localName': 'Puting biya', 'habitat': 'Freshwater', 'information': 'White-gray body, size 10-15cm', 'imageUrl': 'assets/images/fish/fish (14).png'},
+        {'fishId': 'fish_15', 'commonName': 'Silver Perch', 'scientificName': 'Leiopotherapon plumbeus', 'localName': 'Ayuñgin', 'habitat': 'Freshwater', 'information': 'Silver body, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (15).png'},
+        {'fishId': 'fish_16', 'commonName': 'Giant Gourami', 'scientificName': 'Osphronemus goramy', 'localName': 'Gourami', 'habitat': 'Freshwater', 'information': 'Large, robust body, size 50-60cm', 'imageUrl': 'assets/images/fish/fish (16).png'},
+        {'fishId': 'fish_17', 'commonName': 'Mudfish', 'scientificName': 'Oxyeleotris marmoratus', 'localName': 'Mudfish', 'habitat': 'Freshwater', 'information': 'Dark body, size 30-40cm', 'imageUrl': 'assets/images/fish/fish (17).png'},
+        {'fishId': 'fish_18', 'commonName': 'Climbing Perch', 'scientificName': 'Anabas testudineus', 'localName': 'Climbing Perch', 'habitat': 'Freshwater', 'information': 'Brown body, can breathe air, size 20-25cm', 'imageUrl': 'assets/images/fish/fish (18).png'},
+        {'fishId': 'fish_19', 'commonName': 'Trevally', 'scientificName': 'Carangidae spp', 'localName': 'Trevally', 'habitat': 'Saltwater', 'information': 'Silver body, size 30-50cm', 'imageUrl': 'assets/images/fish/fish (19).png'},
+        {'fishId': 'fish_20', 'commonName': 'Grouper', 'scientificName': 'Serranidae spp', 'localName': 'Grouper', 'habitat': 'Saltwater', 'information': 'Various colors, size 40-80cm', 'imageUrl': 'assets/images/fish/fish (20).png'},
+        {'fishId': 'fish_21', 'commonName': 'Red Snapper', 'scientificName': 'Lutjanidae spp', 'localName': 'Snapper', 'habitat': 'Saltwater', 'information': 'Red-pink body, size 25-40cm', 'imageUrl': 'assets/images/fish/fish (21).png'},
+        {'fishId': 'fish_22', 'commonName': 'Goatfish', 'scientificName': 'Mullidae spp', 'localName': 'Goatfish', 'habitat': 'Saltwater', 'information': 'Yellow-red body, barbels, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (22).png'},
+        {'fishId': 'fish_23', 'commonName': 'Emperor', 'scientificName': 'Lethrinus lentjan', 'localName': 'Bitilya', 'habitat': 'Saltwater', 'information': 'Blue-green back, size 35-50cm', 'imageUrl': 'assets/images/fish/fish (23).png'},
+        {'fishId': 'fish_24', 'commonName': 'Indo-Pacific Tarpon', 'scientificName': 'Megalops cyprinoides', 'localName': 'Buan-buan', 'habitat': 'Saltwater', 'information': 'Large silver body, size 80-100cm', 'imageUrl': 'assets/images/fish/fish (24).png'},
+        {'fishId': 'fish_25', 'commonName': 'Dolphinfish', 'scientificName': 'Coryphaena hippurus', 'localName': 'Dorado', 'habitat': 'Saltwater', 'information': 'Golden-green coloring, size 50-80cm', 'imageUrl': 'assets/images/fish/fish (25).png'},
+        {'fishId': 'fish_26', 'commonName': 'Threadfin Salmon', 'scientificName': 'Eleutheronema tetradactylum', 'localName': 'Salmon', 'habitat': 'Saltwater', 'information': 'Silver body, size 80-120cm', 'imageUrl': 'assets/images/fish/fish (26).png'},
+        {'fishId': 'fish_27', 'commonName': 'Red Bigeye', 'scientificName': 'Priacanthus macracanthus', 'localName': 'Dilat', 'habitat': 'Saltwater', 'information': 'Red body, large eyes, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (27).png'},
+        {'fishId': 'fish_28', 'commonName': 'Moonfish', 'scientificName': 'Mene maculata', 'localName': 'Chabeta', 'habitat': 'Saltwater', 'information': 'Disc-shaped, silver body, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (28).png'},
+        {'fishId': 'fish_29', 'commonName': 'Rabbit Fish', 'scientificName': 'Siganus sp', 'localName': 'Rabbit Fish', 'habitat': 'Saltwater', 'information': 'Brown-green body, size 25-30cm', 'imageUrl': 'assets/images/fish/fish (29).png'},
+        {'fishId': 'fish_30', 'commonName': 'Surgeonfish', 'scientificName': 'Acanthurus sp', 'localName': 'Surgeonfish', 'habitat': 'Saltwater', 'information': 'Colorful body, sharp spines, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (30).png'},
+        {'fishId': 'fish_31', 'commonName': 'Butterflyfish', 'scientificName': 'Chaetodon sp', 'localName': 'Butterflyfish', 'habitat': 'Saltwater', 'information': 'Colorful patterned body, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (31).png'},
+        {'fishId': 'fish_32', 'commonName': 'Damselfish', 'scientificName': 'Pomacentridae sp', 'localName': 'Damselfish', 'habitat': 'Saltwater', 'information': 'Bright colored, size 10-15cm', 'imageUrl': 'assets/images/fish/fish (32).png'},
+        {'fishId': 'fish_33', 'commonName': 'Wrasse', 'scientificName': 'Labridae sp', 'localName': 'Wrasse', 'habitat': 'Saltwater', 'information': 'Colorful body, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (33).png'},
+        {'fishId': 'fish_34', 'commonName': 'Parrotfish', 'scientificName': 'Scaridae sp', 'localName': 'Parrotfish', 'habitat': 'Saltwater', 'information': 'Colorful body, beak-like mouth, size 25-35cm', 'imageUrl': 'assets/images/fish/fish (34).png'},
+        {'fishId': 'fish_35', 'commonName': 'Sweetlip', 'scientificName': 'Haemulidae sp', 'localName': 'Sweetlip', 'habitat': 'Saltwater', 'information': 'Striped pattern, size 30-40cm', 'imageUrl': 'assets/images/fish/fish (35).png'},
+        {'fishId': 'fish_36', 'commonName': 'Barracuda', 'scientificName': 'Sphyraena sp', 'localName': 'Barracuda', 'habitat': 'Saltwater', 'information': 'Elongated body, sharp teeth, size 50-80cm', 'imageUrl': 'assets/images/fish/fish (36).png'},
+        {'fishId': 'fish_37', 'commonName': 'Jack', 'scientificName': 'Caranx sp', 'localName': 'Jack', 'habitat': 'Saltwater', 'information': 'Silver body, size 30-50cm', 'imageUrl': 'assets/images/fish/fish (37).png'},
+        {'fishId': 'fish_38', 'commonName': 'Asian Seabass', 'scientificName': 'Lates calcarifer', 'localName': 'Barramundi', 'habitat': 'Saltwater/Freshwater', 'information': 'Silver body, large scales, size 60-100cm', 'imageUrl': 'assets/images/fish/fish (38).png'},
+        {'fishId': 'fish_39', 'commonName': 'Eel', 'scientificName': 'Anguilla sp', 'localName': 'Eel', 'habitat': 'Freshwater/Saltwater', 'information': 'Long snake-like body, size 60-100cm', 'imageUrl': 'assets/images/fish/fish (39).png'},
+        {'fishId': 'fish_40', 'commonName': 'Halfbeak', 'scientificName': 'Hemirhamphus sp', 'localName': 'Halfbeak', 'habitat': 'Saltwater', 'information': 'Silver body, half-long snout, size 20-25cm', 'imageUrl': 'assets/images/fish/fish (40).png'},
+        {'fishId': 'fish_41', 'commonName': 'Needlefish', 'scientificName': 'Belonidae sp', 'localName': 'Needlefish', 'habitat': 'Saltwater', 'information': 'Elongated needle-like body, size 30-40cm', 'imageUrl': 'assets/images/fish/fish (41).png'},
+        {'fishId': 'fish_42', 'commonName': 'Flying Fish', 'scientificName': 'Exocoetus sp', 'localName': 'Flying Fish', 'habitat': 'Saltwater', 'information': 'Can glide above water, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (42).png'},
+        {'fishId': 'fish_43', 'commonName': 'Seahorse', 'scientificName': 'Syngnathidae sp', 'localName': 'Seahorse', 'habitat': 'Saltwater', 'information': 'Horse-like head, prehensile tail, size 10-15cm', 'imageUrl': 'assets/images/fish/fish (43).png'},
+        {'fishId': 'fish_44', 'commonName': 'Sea Dragon', 'scientificName': 'Hippocampus sp', 'localName': 'Sea Dragon', 'habitat': 'Saltwater', 'information': 'Leaf-like appendages, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (44).png'},
+        {'fishId': 'fish_45', 'commonName': 'Pufferfish', 'scientificName': 'Tetraodontidae sp', 'localName': 'Pufferfish', 'habitat': 'Saltwater', 'information': 'Can inflate body, toxic, size 10-20cm', 'imageUrl': 'assets/images/fish/fish (45).png'},
+        {'fishId': 'fish_46', 'commonName': 'Porcupinefish', 'scientificName': 'Diodon sp', 'localName': 'Porcupinefish', 'habitat': 'Saltwater', 'information': 'Spines on body, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (46).png'},
+        {'fishId': 'fish_47', 'commonName': 'Boxfish', 'scientificName': 'Ostraciidae sp', 'localName': 'Boxfish', 'habitat': 'Saltwater', 'information': 'Cube-shaped body, size 10-20cm', 'imageUrl': 'assets/images/fish/fish (47).png'},
+        {'fishId': 'fish_48', 'commonName': 'Pomfret', 'scientificName': 'Stromateidae sp', 'localName': 'Pomfret', 'habitat': 'Saltwater', 'information': 'Flat, disc-shaped, size 20-30cm', 'imageUrl': 'assets/images/fish/fish (48).png'},
+        {'fishId': 'fish_49', 'commonName': 'Ribbonfish', 'scientificName': 'Trichiuridae sp', 'localName': 'Ribbonfish', 'habitat': 'Saltwater', 'information': 'Long ribbon-like body, size 100-150cm', 'imageUrl': 'assets/images/fish/fish (49).png'},
+        {'fishId': 'fish_50', 'commonName': 'Spotted Scat', 'scientificName': 'Scatophagus argus', 'localName': 'Kitang', 'habitat': 'Brackish Water', 'information': 'Silver-bronze with black spots, size 15-20cm', 'imageUrl': 'assets/images/fish/fish (50).png'},
       ];
 
       for (var fish in fishData) {
@@ -106,7 +102,7 @@ Future<void> initializeStructure() async {
     }
   }
 
-  // Initialize Map Locations
+  // Initialize Map Locations (same as before)
   Future<void> initializeMapLocations() async {
     try {
       List<Map<String, dynamic>> mapData = [
