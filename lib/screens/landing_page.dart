@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'map_screen.dart';
+import 'login_page.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -200,7 +201,10 @@ Row(
     ),
     ElevatedButton(
       onPressed: () {
-        // TODO: Navigate to login
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
       },
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.blue[100],

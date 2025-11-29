@@ -11,8 +11,8 @@ void main() async {
   );
 
   // Initialize database
-  final dbInit = DatabaseInitService();
-  await dbInit.initializeAllData();
+  // final dbInit = DatabaseInitService();
+  // await dbInit.initializeAllData();
 
   runApp(const MyApp());
 }
