@@ -3,45 +3,7 @@ import 'package:firebase_database/firebase_database.dart';
 class DatabaseInitService {
   final DatabaseReference _db = FirebaseDatabase.instance.ref();
 
- // Initialize structure with dummy records
-Future<void> initializeStructure() async {
-  try {
-    // Add at least one record to each collection so they appear in Firebase
-    // Then users can add more data in the app
-    
-    // Users collection
-    await _db.child('users').child('user_placeholder').set({
-      'userId': 'user_placeholder',
-      'username': 'placeholder_user',
-      'email': 'placeholder@example.com',
-      'role': 'user',
-    });
-
-    // Searches collection  
-    await _db.child('searches').child('search_placeholder').set({
-      'searchId': 'search_placeholder',
-      'userId': 'user_placeholder',
-      'fishId': 'fish_1',
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
-
-    // Posts collection
-    await _db.child('posts').child('post_placeholder').set({
-      'postId': 'post_placeholder',
-      'userId': 'user_placeholder',
-      'likes': 0,
-      'views': 0,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-    });
-
-    print('✅ Collections created with placeholder data');
-  } catch (e) {
-    print('❌ Error initializing structure: $e');
-  }
-}
-
-
-  // Initialize Fish - 50 Philippine Fish (DUMMY DATA)
+  // Initialize Fish - 50 Philippine Fish
   Future<void> initializeFish() async {
     try {
       List<Map<String, dynamic>> fishData = [
@@ -173,8 +135,8 @@ Future<void> initializeStructure() async {
 
   // Initialize all data
   Future<void> initializeAllData() async {
-    await initializeStructure();
     await initializeFish();
     await initializeMapLocations();
+    print('✅ All data initialization complete');
   }
 }

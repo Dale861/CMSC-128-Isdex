@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'map_screen.dart';
 import 'login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -26,7 +27,7 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _loadSpecies() {
-    _db.child('species').onValue.listen((event) {
+    _db.child('fish').onValue.listen((event) {
       List<Map<dynamic, dynamic>> species = [];
       
       if (event.snapshot.exists) {
@@ -120,17 +121,7 @@ class _LandingPageState extends State<LandingPage> {
               SizedBox(height: 20),
               _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
               _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
-              _buildDetailItem('Features', fish['features'] ?? 'N/A'),
-              _buildDetailItem('Size Range', '${fish['features'] ?? 'N/A'}'),
-              _buildDetailItem(
-                'Conservation Status',
-                fish['conservationStatus'] ?? 'N/A',
-              ),
-              _buildDetailItem(
-                'Seasonality',
-                fish['seasonality'] ?? 'N/A',
-              ),
-              _buildDetailItem('Region', fish['region'] ?? 'N/A'),
+              _buildDetailItem('Information', fish['information'] ?? 'N/A'),
               SizedBox(height: 20),
               SizedBox(
                 width: double.infinity,
@@ -177,6 +168,81 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
+  void _showLoginPrompt() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('Please log in to use this feature.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
+            child: const Text('Log In'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUserMenu() {
+    User? user = FirebaseAuth.instance.currentUser;
+    
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.person, color: Colors.blue),
+              title: Text(user?.email ?? 'User'),
+              subtitle: Text('Logged in'),
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.red),
+              title: Text('Sign Out'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Signed out successfully')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Before any action that requires auth:
+  void onPostButtonPressed() {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      _showLoginPrompt();
+      return;
+    }
+    
+    // Proceed with posting logic
+    // ...
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -190,42 +256,55 @@ class _LandingPageState extends State<LandingPage> {
               padding: EdgeInsets.all(16),
               child: Column(
                 children: [
-Row(
-  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  children: [
-    Image.asset(
-      'assets/images/isdex_logo.png', // Change filename if needed
-      height: 40,
-      width: 40,
-      fit: BoxFit.contain,
-    ),
-    ElevatedButton(
-      onPressed: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.blue[100],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.person, color: Colors.blue),
-          SizedBox(width: 4),
-          Text(
-            'Log in/Sign up',
-            style: TextStyle(color: Colors.blue),
-          ),
-        ],
-      ),
-    ),
-  ],
-),
-
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Image.asset(
+                        'assets/images/isdex_logo.png',
+                        height: 40,
+                        width: 40,
+                        fit: BoxFit.contain,
+                      ),
+                      // Dynamic Login Button with StreamBuilder
+                      StreamBuilder<User?>(
+                        stream: FirebaseAuth.instance.authStateChanges(),
+                        builder: (context, snapshot) {
+                          User? user = snapshot.data;
+                          
+                          return ElevatedButton(
+                            onPressed: () {
+                              if (user == null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                                );
+                              } else {
+                                _showUserMenu();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[100],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person, color: Colors.blue),
+                                SizedBox(width: 4),
+                                Text(
+                                  user == null 
+                                    ? 'Log in/Sign up' 
+                                    : user.email?.split('@')[0] ?? 'User',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                   SizedBox(height: 16),
                   // Search Bar
                   Container(

@@ -1,12 +1,119 @@
 import 'package:flutter/material.dart';
 import 'theme.dart';
 import 'signup_page.dart';
-//import 'package:/sign_up_page.dart';
-// import 'package:your_package_name/theme.dart';
+import '../services/auth_service.dart';
 
-
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
+  final AuthService _authService = AuthService();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  bool _isLoading = false;
+
+  Future<void> _handleLogin() async {
+    // Validate inputs
+    if (_emailController.text.trim().isEmpty) {
+      _showError('Please enter your email');
+      return;
+    }
+
+    if (_passwordController.text.trim().isEmpty) {
+      _showError('Please enter your password');
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await _authService.signInWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      // Success - navigate back to landing page
+      if (mounted) {
+        Navigator.of(context).popUntil((route) => route.isFirst);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Logged in successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showError(_getErrorMessage(e.toString()));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleForgotPassword() async {
+    if (_emailController.text.trim().isEmpty) {
+      _showError('Please enter your email address');
+      return;
+    }
+
+    try {
+      await _authService.resetPassword(_emailController.text.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Password reset email sent! Check your inbox.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showError('Failed to send reset email. Please check your email address.');
+    }
+  }
+
+  String _getErrorMessage(String error) {
+    if (error.contains('user-not-found')) {
+      return 'No account found with this email';
+    } else if (error.contains('wrong-password')) {
+      return 'Incorrect password';
+    } else if (error.contains('invalid-email')) {
+      return 'Invalid email address';
+    } else if (error.contains('user-disabled')) {
+      return 'This account has been disabled';
+    } else if (error.contains('too-many-requests')) {
+      return 'Too many failed attempts. Try again later';
+    } else if (error.contains('network-request-failed')) {
+      return 'Network error. Please check your connection';
+    } else if (error.contains('invalid-credential')) {
+      return 'Invalid email or password';
+    }
+    return 'Login failed. Please try again';
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -82,6 +189,7 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           TextField(
+                            controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: InputDecoration(
                               filled: true,
@@ -103,6 +211,7 @@ class LoginPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           TextField(
+                            controller: _passwordController,
                             obscureText: true,
                             decoration: InputDecoration(
                               filled: true,
@@ -118,9 +227,7 @@ class LoginPage extends StatelessWidget {
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
-                              onPressed: () {
-                                // TODO: sign-in logic
-                              },
+                              onPressed: _isLoading ? null : _handleLogin,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kAccentBlue,
                                 padding: const EdgeInsets.symmetric(vertical: 14),
@@ -128,13 +235,22 @@ class LoginPage extends StatelessWidget {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
-                              child: const Text(
-                                'Log In',
-                                style: TextStyle(
-                                  color: kDarkNavy,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: kDarkNavy,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Text(
+                                      'Log In',
+                                      style: TextStyle(
+                                        color: kDarkNavy,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -145,9 +261,7 @@ class LoginPage extends StatelessWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () {
-                              // TODO: forgot password
-                            },
+                            onPressed: _handleForgotPassword,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: kDarkNavy,
                               side: const BorderSide(color: kDarkNavy),
