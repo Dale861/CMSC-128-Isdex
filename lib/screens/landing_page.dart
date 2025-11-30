@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'map_screen.dart';
 import 'fish_detail_page.dart';
+import 'login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -72,8 +74,176 @@ class _LandingPageState extends State<LandingPage> {
       context,
       MaterialPageRoute(
         builder: (context) => FishDetailPage(fish: fish),
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.image_outlined, size: 40, color: Colors.grey),
+                  SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fish['commonName'] ?? 'Unknown',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          fish['scientificName'] ?? '',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 20),
+              _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
+              _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
+              _buildDetailItem('Information', fish['information'] ?? 'N/A'),
+              SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Widget _buildDetailItem(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLoginPrompt() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Login Required'),
+        content: const Text('Please log in to use this feature.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginPage()),
+              );
+            },
+            child: const Text('Log In'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showUserMenu() {
+    User? user = FirebaseAuth.instance.currentUser;
+    
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: Icon(Icons.person, color: Colors.blue),
+              title: Text(user?.email ?? 'User'),
+              subtitle: Text('Logged in'),
+            ),
+            Divider(),
+            ListTile(
+              leading: Icon(Icons.logout, color: Colors.red),
+              title: Text('Sign Out'),
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Signed out successfully')),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Before any action that requires auth:
+  void onPostButtonPressed() {
+    User? currentUser = FirebaseAuth.instance.currentUser;
+    
+    if (currentUser == null) {
+      _showLoginPrompt();
+      return;
+    }
+    
+    // Proceed with posting logic
+    // ...
   }
 
   @override
@@ -134,6 +304,57 @@ class _LandingPageState extends State<LandingPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Image.asset(
+                        'assets/images/isdex_logo.png',
+                        height: 40,
+                        width: 40,
+                        fit: BoxFit.contain,
+                      ),
+                      // Dynamic Login Button with StreamBuilder
+                      StreamBuilder<User?>(
+                        stream: FirebaseAuth.instance.authStateChanges(),
+                        builder: (context, snapshot) {
+                          User? user = snapshot.data;
+                          
+                          return ElevatedButton(
+                            onPressed: () {
+                              if (user == null) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => const LoginPage()),
+                                );
+                              } else {
+                                _showUserMenu();
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue[100],
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.person, color: Colors.blue),
+                                SizedBox(width: 4),
+                                Text(
+                                  user == null 
+                                    ? 'Log in/Sign up' 
+                                    : user.email?.split('@')[0] ?? 'User',
+                                  style: TextStyle(color: Colors.blue),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 16),
+                  // Search Bar
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.blue[50],

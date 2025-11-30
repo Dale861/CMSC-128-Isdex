@@ -17,6 +17,7 @@ dependencies:
   flutter_svg: ^2.0.0
   flutter_map: ^6.2.0
   latlong2: ^0.9.1
+  firebase_auth: ^6.1.2
 
 dev_dependencies:
   flutter_test:
