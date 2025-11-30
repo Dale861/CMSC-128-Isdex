@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'map_screen.dart';
+import 'community_page.dart';  // Add this import
 import 'fish_detail_page.dart';
 import 'login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -97,7 +98,6 @@ class _LandingPageState extends State<LandingPage> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  // Display fish image in modal
                   ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: fish['imageUrl'] != null &&
@@ -202,32 +202,6 @@ class _LandingPageState extends State<LandingPage> {
     );
   }
 
-  void _showLoginPrompt() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Login Required'),
-        content: const Text('Please log in to use this feature.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginPage()),
-              );
-            },
-            child: const Text('Log In'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _showUserMenu() {
     User? user = FirebaseAuth.instance.currentUser;
     
@@ -276,7 +250,6 @@ class _LandingPageState extends State<LandingPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Single header row with StreamBuilder
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -299,7 +272,6 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                         ],
                       ),
-                      // Dynamic Login Button with StreamBuilder
                       StreamBuilder<User?>(
                         stream: FirebaseAuth.instance.authStateChanges(),
                         builder: (context, snapshot) {
@@ -340,7 +312,6 @@ class _LandingPageState extends State<LandingPage> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Search Bar
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.blue[50],
@@ -357,7 +328,6 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  // Habitat Filter Chips
                   Row(
                     children: [
                       Expanded(
@@ -394,7 +364,6 @@ class _LandingPageState extends State<LandingPage> {
                 ],
               ),
             ),
-            // Fish Species List
             Expanded(
               child: filteredSpecies.isEmpty
                   ? const Center(
@@ -426,7 +395,6 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                             child: Row(
                               children: [
-                                // Fish Image - CORRECTED TO USE Image.asset
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: fish['imageUrl'] != null &&
@@ -438,7 +406,6 @@ class _LandingPageState extends State<LandingPage> {
                                           fit: BoxFit.cover,
                                           errorBuilder:
                                               (context, error, stackTrace) {
-                                            print('Image load error: ${fish['imageUrl']}');
                                             return Container(
                                               width: 50,
                                               height: 50,
@@ -504,28 +471,53 @@ class _LandingPageState extends State<LandingPage> {
                       },
                     ),
             ),
-            // Bottom Navigation Bar
+            // CONDITIONAL BOTTOM NAVIGATION BAR
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.home, color: Colors.blue, size: 28),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const MapScreen()),
-                      );
-                    },
-                    icon: Icon(Icons.map, color: Colors.grey[400], size: 28),
-                  ),
-                ],
+              child: StreamBuilder<User?>(
+                stream: FirebaseAuth.instance.authStateChanges(),
+                builder: (context, snapshot) {
+                  User? user = snapshot.data;
+                  bool isLoggedIn = user != null;
+                  
+                  return Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // Home Button (Always visible)
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.home, color: Colors.blue, size: 28),
+                      ),
+                      
+                      // Community Button (Only for logged-in users)
+                      if (isLoggedIn)
+                        IconButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CommunityPage(),
+                              ),
+                            );
+                          },
+                          icon: Icon(Icons.people, color: Colors.grey[400], size: 28),
+                        ),
+                      
+                      // Map Button (Always visible)
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const MapScreen()),
+                          );
+                        },
+                        icon: Icon(Icons.map, color: Colors.grey[400], size: 28),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
