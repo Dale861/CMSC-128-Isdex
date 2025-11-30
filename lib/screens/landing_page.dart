@@ -5,6 +5,7 @@ import 'fish_detail_page.dart';
 import 'login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
 
@@ -12,7 +13,8 @@ class LandingPage extends StatefulWidget {
   State<LandingPage> createState() => _LandingPageState();
 }
 
-class _LandingPageState extends State<LandingPage> {
+
+class _LandingPageState extends State<LandingPage> {  
   final DatabaseReference _db = FirebaseDatabase.instance.ref();
   List<Map<dynamic, dynamic>> filteredSpecies = [];
   List<Map<dynamic, dynamic>> allSpecies = [];
@@ -70,82 +72,115 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _showFishDetails(Map<dynamic, dynamic> fish) {
-  showModalBottomSheet(
-    context: context,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
-    builder: (context) => Container(
-      padding: EdgeInsets.all(20),
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            SizedBox(height: 16),
-            Row(
-              children: [
-                Icon(Icons.image_outlined, size: 40, color: Colors.grey),
-                SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        fish['commonName'] ?? 'Unknown',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        fish['scientificName'] ?? '',
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-              ],
-            ),
-            SizedBox(height: 20),
-            _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
-            _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
-            _buildDetailItem('Information', fish['information'] ?? 'N/A'),
-            SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                ),
-                child: Text(
-                  'Close',
-                  style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  // Display fish image in modal
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: fish['imageUrl'] != null &&
+                            fish['imageUrl'].toString().isNotEmpty
+                        ? Image.asset(
+                            fish['imageUrl'],
+                            width: 60,
+                            height: 60,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[200],
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 40,
+                                  color: Colors.grey[400],
+                                ),
+                              );
+                            },
+                          )
+                        : Container(
+                            width: 60,
+                            height: 60,
+                            color: Colors.grey[200],
+                            child: const Icon(
+                              Icons.image_outlined,
+                              size: 40,
+                              color: Colors.grey,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          fish['commonName'] ?? 'Unknown',
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          fish['scientificName'] ?? '',
+                          style: TextStyle(color: Colors.grey[600]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
+              _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
+              _buildDetailItem('Information', fish['information'] ?? 'N/A'),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(color: Colors.white, fontSize: 16),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildDetailItem(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -157,10 +192,10 @@ class _LandingPageState extends State<LandingPage> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
             value,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
           ),
         ],
       ),
@@ -198,28 +233,28 @@ class _LandingPageState extends State<LandingPage> {
     
     showModalBottomSheet(
       context: context,
-      shape: RoundedRectangleBorder(
+      shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) => Container(
-        padding: EdgeInsets.all(20),
+        padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: Icon(Icons.person, color: Colors.blue),
+              leading: const Icon(Icons.person, color: Colors.blue),
               title: Text(user?.email ?? 'User'),
-              subtitle: Text('Logged in'),
+              subtitle: const Text('Logged in'),
             ),
-            Divider(),
+            const Divider(),
             ListTile(
-              leading: Icon(Icons.logout, color: Colors.red),
-              title: Text('Sign Out'),
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Sign Out'),
               onTap: () async {
                 await FirebaseAuth.instance.signOut();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Signed out successfully')),
+                  const SnackBar(content: Text('Signed out successfully')),
                 );
               },
             ),
@@ -227,19 +262,6 @@ class _LandingPageState extends State<LandingPage> {
         ),
       ),
     );
-  }
-
-  // Before any action that requires auth:
-  void onPostButtonPressed() {
-    User? currentUser = FirebaseAuth.instance.currentUser;
-    
-    if (currentUser == null) {
-      _showLoginPrompt();
-      return;
-    }
-    
-    // Proceed with posting logic
-    // ...
   }
 
   @override
@@ -254,14 +276,28 @@ class _LandingPageState extends State<LandingPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  // Single header row with StreamBuilder
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Image.asset(
-                        'assets/images/isdex_logo.png',
-                        height: 40,
-                        width: 40,
-                        fit: BoxFit.contain,
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/isdex_logo.png',
+                            height: 40,
+                            width: 40,
+                            fit: BoxFit.contain,
+                          ),
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Isdex',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
                       ),
                       // Dynamic Login Button with StreamBuilder
                       StreamBuilder<User?>(
@@ -288,13 +324,13 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.person, color: Colors.blue),
-                                SizedBox(width: 4),
+                                const Icon(Icons.person, color: Colors.blue),
+                                const SizedBox(width: 4),
                                 Text(
                                   user == null 
                                     ? 'Log in/Sign up' 
                                     : user.email?.split('@')[0] ?? 'User',
-                                  style: TextStyle(color: Colors.blue),
+                                  style: const TextStyle(color: Colors.blue),
                                 ),
                               ],
                             ),
@@ -303,7 +339,7 @@ class _LandingPageState extends State<LandingPage> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   // Search Bar
                   Container(
                     decoration: BoxDecoration(
@@ -321,6 +357,7 @@ class _LandingPageState extends State<LandingPage> {
                     ),
                   ),
                   const SizedBox(height: 12),
+                  // Habitat Filter Chips
                   Row(
                     children: [
                       Expanded(
@@ -357,6 +394,7 @@ class _LandingPageState extends State<LandingPage> {
                 ],
               ),
             ),
+            // Fish Species List
             Expanded(
               child: filteredSpecies.isEmpty
                   ? const Center(
@@ -388,19 +426,19 @@ class _LandingPageState extends State<LandingPage> {
                             ),
                             child: Row(
                               children: [
-                                // CHANGED: Use Image.asset for local files
+                                // Fish Image - CORRECTED TO USE Image.asset
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
                                   child: fish['imageUrl'] != null &&
                                           fish['imageUrl'].toString().isNotEmpty
-                                      ? Image.asset(  // ← CHANGED FROM Image.network
+                                      ? Image.asset(
                                           fish['imageUrl'],
                                           width: 50,
                                           height: 50,
                                           fit: BoxFit.cover,
                                           errorBuilder:
                                               (context, error, stackTrace) {
-                                            print('Image error: ${fish['imageUrl']} - $error');
+                                            print('Image load error: ${fish['imageUrl']}');
                                             return Container(
                                               width: 50,
                                               height: 50,
@@ -466,6 +504,7 @@ class _LandingPageState extends State<LandingPage> {
                       },
                     ),
             ),
+            // Bottom Navigation Bar
             Container(
               color: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 12),
