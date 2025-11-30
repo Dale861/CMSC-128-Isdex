@@ -70,82 +70,78 @@ class _LandingPageState extends State<LandingPage> {
   }
 
   void _showFishDetails(Map<dynamic, dynamic> fish) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => FishDetailPage(fish: fish),
-    showModalBottomSheet(
-      context: context,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+  showModalBottomSheet(
+    context: context,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder: (context) => Container(
+      padding: EdgeInsets.all(20),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(Icons.image_outlined, size: 40, color: Colors.grey),
-                  SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          fish['commonName'] ?? 'Unknown',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+            ),
+            SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(Icons.image_outlined, size: 40, color: Colors.grey),
+                SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fish['commonName'] ?? 'Unknown',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Text(
-                          fish['scientificName'] ?? '',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: 20),
-              _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
-              _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
-              _buildDetailItem('Information', fish['information'] ?? 'N/A'),
-              SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  child: Text(
-                    'Close',
-                    style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+                      Text(
+                        fish['scientificName'] ?? '',
+                        style: TextStyle(color: Colors.grey[600]),
+                      ),
+                    ],
                   ),
                 ),
+              ],
+            ),
+            SizedBox(height: 20),
+            _buildDetailItem('Local Name', fish['localName'] ?? 'N/A'),
+            _buildDetailItem('Habitat', fish['habitat'] ?? 'N/A'),
+            _buildDetailItem('Information', fish['information'] ?? 'N/A'),
+            SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  'Close',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildDetailItem(String label, String value) {
     return Padding(
@@ -258,52 +254,6 @@ class _LandingPageState extends State<LandingPage> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/isdex_logo.png',
-                            height: 40,
-                            width: 40,
-                            fit: BoxFit.contain,
-                          ),
-                          const SizedBox(width: 8),
-                          const Text(
-                            'Isdex',
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue,
-                            ),
-                          ),
-                        ],
-                      ),
-                      ElevatedButton(
-                        onPressed: () {
-                          // TODO: Add login functionality
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[100],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.person, color: Colors.blue),
-                            SizedBox(width: 4),
-                            Text(
-                              'Log in/Sign up',
-                              style: TextStyle(color: Colors.blue),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
