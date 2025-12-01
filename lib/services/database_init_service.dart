@@ -68,10 +68,11 @@ class DatabaseInitService {
     }
   }
 
-  // Initialize Map Locations (same as before)
+    // Initialize Map Locations (same as before)
   Future<void> initializeMapLocations() async {
     try {
       List<Map<String, dynamic>> mapData = [
+        // original 50 locations
         {'locationId': 'location_1', 'fishId': 'fish_1', 'latitude': 6.0765, 'longitude': 125.6306, 'region': 'Sarangani'},
         {'locationId': 'location_2', 'fishId': 'fish_2', 'latitude': 14.5994, 'longitude': 120.9842, 'region': 'Manila Bay'},
         {'locationId': 'location_3', 'fishId': 'fish_3', 'latitude': 14.6667, 'longitude': 120.8333, 'region': 'Navotas'},
@@ -122,12 +123,35 @@ class DatabaseInitService {
         {'locationId': 'location_48', 'fishId': 'fish_48', 'latitude': 6.5500, 'longitude': 124.8000, 'region': 'Dadiangas'},
         {'locationId': 'location_49', 'fishId': 'fish_49', 'latitude': 5.9788, 'longitude': 126.0245, 'region': 'Cotabato Bay'},
         {'locationId': 'location_50', 'fishId': 'fish_50', 'latitude': 9.7457, 'longitude': 118.7302, 'region': 'Puerto Princesa Bay'},
+
+        // extra locations (examples)
+        {
+          'locationId': 'location_1b',
+          'fishId': 'fish_1',
+          'latitude': 7.0000,
+          'longitude': 125.3000,
+          'region': 'Davao Gulf',
+        },
+        {
+          'locationId': 'location_2b',
+          'fishId': 'fish_2',
+          'latitude': 13.5000,
+          'longitude': 120.9000,
+          'region': 'Batangas Coast',
+        },
+        {
+          'locationId': 'location_18b',
+          'fishId': 'fish_18',
+          'latitude': 13.8000,
+          'longitude': 121.1000,
+          'region': 'Laguna Rice Fields',
+        },
       ];
 
       for (var location in mapData) {
         await _db.child('map').child(location['locationId']).set(location);
       }
-      print('✅ 50 Map locations initialized successfully');
+      print('✅ Map locations initialized successfully (with extra locations)');
     } catch (e) {
       print('❌ Error initializing map locations: $e');
     }

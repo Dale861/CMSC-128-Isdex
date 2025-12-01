@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'map_screen.dart';
 
 class FishDetailPage extends StatelessWidget {
   final Map<dynamic, dynamic> fish;
@@ -12,7 +14,7 @@ class FishDetailPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Header with back button
+            // Header
             Container(
               padding: const EdgeInsets.all(16),
               child: Row(
@@ -56,7 +58,7 @@ class FishDetailPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Fish Image Placeholder
+                    // Fish Image
                     Center(
                       child: Container(
                         height: 200,
@@ -66,36 +68,42 @@ class FishDetailPage extends StatelessWidget {
                           border: Border.all(color: Colors.blue, width: 2),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: fish['imageUrl'] != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  fish['imageUrl'],
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(
+                        clipBehavior: Clip.antiAlias,
+                        child: (fish['imageUrl'] != null &&
+                                fish['imageUrl'].toString().isNotEmpty)
+                            ? Image.asset(
+                                fish['imageUrl'],
+                                fit: BoxFit.contain,
+                                width: double.infinity,
+                                height: 200,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(
+                                    child: Icon(
                                       Icons.image_outlined,
                                       size: 100,
                                       color: Colors.grey,
-                                    );
-                                  },
-                                ),
+                                    ),
+                                  );
+                                },
                               )
-                            : const Icon(
-                                Icons.image_outlined,
-                                size: 100,
-                                color: Colors.grey,
+                            : const Center(
+                                child: Icon(
+                                  Icons.image_outlined,
+                                  size: 100,
+                                  color: Colors.grey,
+                                ),
                               ),
                       ),
                     ),
 
-                    // Tabs for Information, Gallery, Map
-                    _buildTabSection(),
+                    // Tabs
+                    _buildTabSection(context),
+
                     const SizedBox(height: 24),
 
-                    // Common Name Section
+                    // Common Name
                     _buildInfoSection(
-                      'Golden Tilapia',
+                      'Common Name',
                       fish['commonName'] ?? 'Unknown',
                     ),
 
@@ -113,7 +121,7 @@ class FishDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Description Section
+                    // Description
                     _buildSectionHeader('Description'),
                     const SizedBox(height: 8),
                     Text(
@@ -127,7 +135,7 @@ class FishDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Size Range Section
+                    // Size Range
                     _buildSectionHeader('Size Range'),
                     const SizedBox(height: 8),
                     Text(
@@ -181,7 +189,7 @@ class FishDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Habitat Section
+                    // Habitat
                     _buildSectionHeader('Habitat'),
                     const SizedBox(height: 8),
                     Wrap(
@@ -200,7 +208,7 @@ class FishDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Conservation Status (if available)
+                    // Conservation Status
                     if (fish['conservationStatus'] != null) ...[
                       _buildSectionHeader('Conservation Status'),
                       const SizedBox(height: 8),
@@ -214,7 +222,7 @@ class FishDetailPage extends StatelessWidget {
                       const SizedBox(height: 24),
                     ],
 
-                    // Distribution (if available)
+                    // Distribution
                     if (fish['distribution'] != null) ...[
                       _buildSectionHeader('Distribution'),
                       const SizedBox(height: 8),
@@ -237,30 +245,55 @@ class FishDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildTabSection() {
+  // Tabs row
+  Widget _buildTabSection(BuildContext context) {
     return Row(
       children: [
-        _buildTab('Information', true),
-        _buildTab('Gallery', false),
-        _buildTab('Map', false),
+        _buildTab('Information', true, () {}),
+        _buildTab('Gallery', false, () {
+          // TODO
+        }),
+        _buildTab('Map', false, () {
+          final String? fishId = fish['fishId']?.toString();
+          if (fishId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No fishId found for this fish')),
+            );
+            return;
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => MapScreen(
+                fishId: fishId,                         // NEW
+                fishName: fish['commonName'] ?? 'Fish',
+              ),
+            ),
+          );
+        }),
       ],
     );
   }
 
-  Widget _buildTab(String label, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? Colors.blue : Colors.grey[200],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey[600],
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
+
+  Widget _buildTab(String label, bool isSelected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        margin: const EdgeInsets.only(right: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blue : Colors.grey[200],
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey[600],
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
+          ),
         ),
       ),
     );
