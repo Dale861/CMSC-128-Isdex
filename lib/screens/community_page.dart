@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'login_page.dart';
 
 class CommunityPage extends StatelessWidget {
   const CommunityPage({super.key});
@@ -30,16 +32,25 @@ class CommunityPage extends StatelessWidget {
       body: const SafeArea(
         child: _FeedList(),
       ),
+
+      // + button: if not logged in -> dialog; if logged in -> create post sheet
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _openCreatePostSheet(context),
+        onPressed: () {
+          final user = FirebaseAuth.instance.currentUser;
+
+          if (user == null) {
+            _showLoginPrompt(context);
+          } else {
+            _openCreatePostSheet(context);
+          }
+        },
         child: const Icon(Icons.add),
       ),
-
     );
   }
 }
 
-/// Feed list with IG-style posts (for now uses dummy data)
+/// Feed list with dummy posts for now
 class _FeedList extends StatelessWidget {
   const _FeedList();
 
@@ -51,6 +62,7 @@ class _FeedList extends StatelessWidget {
           'caption':
               'Morning check ✅ Water looks clearer today and feed response is good.',
           'timeAgo': '2h ago',
+          'likes': '24',
         },
         {
           'username': 'fisher_b',
@@ -59,6 +71,7 @@ class _FeedList extends StatelessWidget {
           'caption':
               'Anyone else seeing slower growth this week? Might be the temperature.',
           'timeAgo': '6h ago',
+          'likes': '11',
         },
         {
           'username': 'researcher_c',
@@ -67,6 +80,7 @@ class _FeedList extends StatelessWidget {
           'caption':
               'Sampled DO levels this afternoon. Slight drop vs yesterday, monitoring tomorrow.',
           'timeAgo': '1d ago',
+          'likes': '37',
         },
       ];
 
@@ -85,19 +99,21 @@ class _FeedList extends StatelessWidget {
           species: post['species'] ?? '',
           caption: post['caption'] ?? '',
           timeAgo: post['timeAgo'] ?? '',
+          likes: post['likes'] ?? '0',
         );
       },
     );
   }
 }
 
-/// Single post item – IG-style: header, image, actions, caption, time
+/// Single post card – picture-focused, unique layout, like+comment only
 class _PostItem extends StatelessWidget {
   final String username;
   final String location;
   final String species;
   final String caption;
   final String timeAgo;
+  final String likes;
 
   const _PostItem({
     required this.username,
@@ -105,155 +121,182 @@ class _PostItem extends StatelessWidget {
     required this.species,
     required this.caption,
     required this.timeAgo,
+    required this.likes,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // HEADER: avatar, username, location, menu
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                radius: 18,
-                child: Icon(Icons.person, size: 20),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+        ),
+        elevation: 2,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // TOP: username + location + menu
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: Row(
+                children: [
+                  const CircleAvatar(
+                    radius: 18,
+                    child: Icon(Icons.person, size: 20),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          username,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                        ),
+                        if (location.isNotEmpty)
+                          Text(
+                            location,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      // later: show report / options menu
+                    },
+                    icon: const Icon(Icons.more_horiz),
+                    splashRadius: 20,
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
+            ),
+
+            // IMAGE AREA – main focus
+            AspectRatio(
+              aspectRatio: 4 / 3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Container(
+                    color: Colors.grey[300],
+                    child: const Center(
+                      child: Icon(
+                        Icons.image,
+                        size: 60,
+                        color: Colors.white70,
                       ),
                     ),
-                    if (location.isNotEmpty)
-                      Text(
-                        location,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                  ),
+                  if (species.isNotEmpty)
+                    Positioned(
+                      left: 12,
+                      top: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          species,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
-                  ],
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  // later: show report / options menu
-                },
-                icon: const Icon(Icons.more_vert),
-              ),
-            ],
-          ),
-        ),
-
-        // IMAGE AREA (placeholder for now)
-        AspectRatio(
-          aspectRatio: 4 / 5, // tall post like IG
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 0),
-            decoration: BoxDecoration(
-              color: Colors.grey[300],
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.image,
-                size: 60,
-                color: Colors.white70,
-              ),
-            ),
-          ),
-        ),
-
-        // ACTIONS: like, comment, share, bookmark
-        Padding
-        (
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          child: Row(
-            children: [
-              IconButton(
-                onPressed: () {
-                  // later: like
-                },
-                icon: const Icon(Icons.favorite_border, size: 26),
-              ),
-              IconButton(
-                onPressed: () {
-                  // later: open comments
-                },
-                icon: const Icon(Icons.mode_comment_outlined, size: 24),
-              ),
-              IconButton(
-                onPressed: () {
-                  // later: share
-                },
-                icon: const Icon(Icons.send_outlined, size: 24),
-              ),
-              const Spacer(),
-              IconButton(
-                onPressed: () {
-                  // later: save/bookmark
-                },
-                icon: const Icon(Icons.bookmark_border, size: 26),
-              ),
-            ],
-          ),
-        ),
-
-        // SPECIES + CAPTION
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (species.isNotEmpty)
-                Text(
-                  species,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                  ),
-                ),
-              const SizedBox(height: 4),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    color: Colors.black,
-                    fontSize: 14,
-                  ),
-                  children: [
-                    TextSpan(
-                      text: '$username ',
-                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    TextSpan(text: caption),
-                  ],
-                ),
+                ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                timeAgo,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
 
-        const SizedBox(height: 12),
-        const Divider(height: 1),
-      ],
+            const SizedBox(height: 6),
+
+            // ACTIONS: like + comment only
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      // later: like
+                    },
+                    icon: const Icon(Icons.favorite_border, size: 24),
+                    splashRadius: 20,
+                  ),
+                  IconButton(
+                    onPressed: () {
+                      // later: open comments
+                    },
+                    icon: const Icon(Icons.mode_comment_outlined, size: 22),
+                    splashRadius: 20,
+                  ),
+                  const Spacer(),
+                ],
+              ),
+            ),
+
+            // LIKES + CAPTION + TIME
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12).copyWith(bottom: 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$likes likes',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        color: Colors.black,
+                        fontSize: 14,
+                      ),
+                      children: [
+                        TextSpan(
+                          text: '$username ',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        TextSpan(text: caption),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    timeAgo,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
+
 /// Bottom sheet for creating a new post (UI only for now)
 void _openCreatePostSheet(BuildContext context) {
   final captionController = TextEditingController();
@@ -299,7 +342,7 @@ void _openCreatePostSheet(BuildContext context) {
 
               // Image preview placeholder
               AspectRatio(
-                aspectRatio: 4 / 5,
+                aspectRatio: 4 / 3,
                 child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey[300],
@@ -316,7 +359,6 @@ void _openCreatePostSheet(BuildContext context) {
               ),
               const SizedBox(height: 8),
 
-              // Later: this button will open image picker
               OutlinedButton.icon(
                 onPressed: () {
                   // TODO: integrate image picker later
@@ -345,7 +387,6 @@ void _openCreatePostSheet(BuildContext context) {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // UI only for now: we just close and show a message
                     if (captionController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -370,5 +411,32 @@ void _openCreatePostSheet(BuildContext context) {
         ),
       );
     },
+  );
+}
+
+/// Login-required dialog from your teammate, adapted to take BuildContext
+void _showLoginPrompt(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Login Required'),
+      content: const Text('Please log in to use this feature.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LoginPage()),
+            );
+          },
+          child: const Text('Log In'),
+        ),
+      ],
+    ),
   );
 }
