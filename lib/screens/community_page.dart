@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'login_page.dart';
 
 class CommunityPage extends StatelessWidget {
@@ -23,7 +24,7 @@ class CommunityPage extends StatelessWidget {
         actions: [
           IconButton(
             onPressed: () {
-              // later: open notifications
+              // TODO: notifications page later
             },
             icon: const Icon(Icons.notifications_none, color: Colors.black),
           ),
@@ -33,7 +34,7 @@ class CommunityPage extends StatelessWidget {
         child: _FeedList(),
       ),
 
-      // + button: if not logged in -> dialog; if logged in -> create post sheet
+      // + button: if not logged in -> login dialog; if logged in -> new post sheet
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final user = FirebaseAuth.instance.currentUser;
@@ -50,63 +51,67 @@ class CommunityPage extends StatelessWidget {
   }
 }
 
-/// Feed list with dummy posts for now
+/// Feed list that listens to Realtime Database: /community_posts
 class _FeedList extends StatelessWidget {
   const _FeedList();
 
-  List<Map<String, String>> get _dummyPosts => [
-        {
-          'username': 'student_a',
-          'location': 'Cage 1 – East Side',
-          'species': 'Bangus (Milkfish)',
-          'caption':
-              'Morning check ✅ Water looks clearer today and feed response is good.',
-          'timeAgo': '2h ago',
-          'likes': '24',
-        },
-        {
-          'username': 'fisher_b',
-          'location': 'Pond 3',
-          'species': 'Tilapia',
-          'caption':
-              'Anyone else seeing slower growth this week? Might be the temperature.',
-          'timeAgo': '6h ago',
-          'likes': '11',
-        },
-        {
-          'username': 'researcher_c',
-          'location': 'Zone 3 Shrimp Pond',
-          'species': 'Penaeus monodon',
-          'caption':
-              'Sampled DO levels this afternoon. Slight drop vs yesterday, monitoring tomorrow.',
-          'timeAgo': '1d ago',
-          'likes': '37',
-        },
-      ];
-
   @override
   Widget build(BuildContext context) {
-    final posts = _dummyPosts;
+    final DatabaseReference dbRef =
+        FirebaseDatabase.instance.ref().child('community_posts');
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80),
-      itemCount: posts.length,
-      itemBuilder: (context, index) {
-        final post = posts[index];
-        return _PostItem(
-          username: post['username'] ?? 'user',
-          location: post['location'] ?? '',
-          species: post['species'] ?? '',
-          caption: post['caption'] ?? '',
-          timeAgo: post['timeAgo'] ?? '',
-          likes: post['likes'] ?? '0',
+    return StreamBuilder<DatabaseEvent>(
+      stream: dbRef.onValue, // listen to all changes under /community_posts
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
+          return const Center(
+            child: Text(
+              'No posts yet.\nBe the first to share!',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey),
+            ),
+          );
+        }
+
+        // Realtime DB returns a Map of key -> postData
+        final raw = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+
+        // Convert entries to list and sort by timePosted (newest first)
+        final entries = raw.entries.toList()
+          ..sort((a, b) {
+            final ma = a.value['timePosted'] ?? 0;
+            final mb = b.value['timePosted'] ?? 0;
+            // descending
+            return (mb as int).compareTo(ma as int);
+          });
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 80),
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final data = Map<String, dynamic>.from(entries[index].value);
+
+            return _PostItem(
+              username: data['username'] ?? 'Unknown',
+              location: data['location'] ?? '',
+              species: data['species'] ?? '',
+              caption: data['caption'] ?? '',
+              likes: (data['likes'] ?? 0).toString(),
+              timeAgo: _timeAgoFromMillis(data['timePosted']),
+              imageUrl: (data['imageUrl'] ?? '') as String?,
+            );
+          },
         );
       },
     );
   }
 }
 
-/// Single post card – picture-focused, unique layout, like+comment only
+/// Single post card – picture-focused, with like + comment only
 class _PostItem extends StatelessWidget {
   final String username;
   final String location;
@@ -114,6 +119,7 @@ class _PostItem extends StatelessWidget {
   final String caption;
   final String timeAgo;
   final String likes;
+  final String? imageUrl;
 
   const _PostItem({
     required this.username,
@@ -122,6 +128,7 @@ class _PostItem extends StatelessWidget {
     required this.caption,
     required this.timeAgo,
     required this.likes,
+    required this.imageUrl,
   });
 
   @override
@@ -171,7 +178,7 @@ class _PostItem extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () {
-                      // later: show report / options menu
+                      // TODO: options / report menu
                     },
                     icon: const Icon(Icons.more_horiz),
                     splashRadius: 20,
@@ -180,22 +187,42 @@ class _PostItem extends StatelessWidget {
               ),
             ),
 
-            // IMAGE AREA – main focus
+            // IMAGE AREA – main focus (network if available, grey placeholder otherwise)
             AspectRatio(
               aspectRatio: 4 / 3,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    color: Colors.grey[300],
-                    child: const Center(
-                      child: Icon(
-                        Icons.image,
-                        size: 60,
-                        color: Colors.white70,
+                  if (imageUrl != null && imageUrl!.isNotEmpty)
+                    Image.network(
+                      imageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: Icon(
+                          Icons.image,
+                          size: 60,
+                          color: Colors.white70,
+                        ),
                       ),
                     ),
-                  ),
+
+                  // Species chip on top-left, if provided
                   if (species.isNotEmpty)
                     Positioned(
                       left: 12,
@@ -225,21 +252,21 @@ class _PostItem extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // ACTIONS: like + comment only
+            // ACTIONS: like + comment only (no share/bookmark)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
                 children: [
                   IconButton(
                     onPressed: () {
-                      // later: like
+                      // TODO: implement like update in DB
                     },
                     icon: const Icon(Icons.favorite_border, size: 24),
                     splashRadius: 20,
                   ),
                   IconButton(
                     onPressed: () {
-                      // later: open comments
+                      // TODO: open comments
                     },
                     icon: const Icon(Icons.mode_comment_outlined, size: 22),
                     splashRadius: 20,
@@ -297,9 +324,12 @@ class _PostItem extends StatelessWidget {
   }
 }
 
-/// Bottom sheet for creating a new post (UI only for now)
+/// Bottom sheet for creating a NEW post -> writes to Realtime DB
 void _openCreatePostSheet(BuildContext context) {
   final captionController = TextEditingController();
+  final DatabaseReference dbRef =
+      FirebaseDatabase.instance.ref().child('community_posts');
+  final User? user = FirebaseAuth.instance.currentUser;
 
   showModalBottomSheet(
     context: context,
@@ -340,7 +370,7 @@ void _openCreatePostSheet(BuildContext context) {
               ),
               const SizedBox(height: 12),
 
-              // Image preview placeholder
+              // Image preview placeholder (we'll hook Storage later)
               AspectRatio(
                 aspectRatio: 4 / 3,
                 child: Container(
@@ -361,10 +391,11 @@ void _openCreatePostSheet(BuildContext context) {
 
               OutlinedButton.icon(
                 onPressed: () {
-                  // TODO: integrate image picker later
+                  // TODO: integrate image picker + Firebase Storage later
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Image picker not yet implemented'),
+                      content:
+                          Text('Image upload not yet implemented (UI only).'),
                     ),
                   );
                 },
@@ -386,22 +417,44 @@ void _openCreatePostSheet(BuildContext context) {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (captionController.text.trim().isEmpty) {
+                  onPressed: () async {
+                    final caption = captionController.text.trim();
+
+                    if (caption.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('Please add a caption or photo.'),
+                          content: Text('Please add a caption.'),
                         ),
                       );
                       return;
                     }
 
-                    Navigator.of(context).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Post submitted (local only for now)'),
-                      ),
-                    );
+                    try {
+                      // Create a new child under /community_posts
+                      await dbRef.push().set({
+                        'caption': caption,
+                        'username':
+                            user?.email?.split('@')[0] ?? 'Anonymous user',
+                        'location': '', // can be filled later
+                        'species': '',  // can be filled later
+                        'likes': 0,
+                        'imageUrl': '', // for now no real image
+                        'timePosted': ServerValue.timestamp,
+                      });
+
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Post published!'),
+                        ),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to post: $e'),
+                        ),
+                      );
+                    }
                   },
                   child: const Text('Post'),
                 ),
@@ -414,7 +467,7 @@ void _openCreatePostSheet(BuildContext context) {
   );
 }
 
-/// Login-required dialog from your teammate, adapted to take BuildContext
+/// Login-required dialog (from your teammate) adapted to use here
 void _showLoginPrompt(BuildContext context) {
   showDialog(
     context: context,
@@ -439,4 +492,17 @@ void _showLoginPrompt(BuildContext context) {
       ],
     ),
   );
+}
+
+/// Helper to convert Realtime DB timestamp (millis) into '2h ago', '1d ago'
+String _timeAgoFromMillis(dynamic millis) {
+  if (millis == null) return '';
+  if (millis is! int) return '';
+
+  final dt = DateTime.fromMillisecondsSinceEpoch(millis);
+  final diff = DateTime.now().difference(dt);
+
+  if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
+  if (diff.inHours < 24) return '${diff.inHours}h ago';
+  return '${diff.inDays}d ago';
 }
