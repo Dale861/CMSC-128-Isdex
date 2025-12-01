@@ -57,6 +57,8 @@ class DefaultFirebaseOptions {
     appId: '1:429295762575:android:703be69a0c44c850dcc4fa',
     messagingSenderId: '429295762575',
     projectId: 'isdex-68054',
+    databaseURL: 'https://isdex-68054-default-rtdb.firebaseio.com',
     storageBucket: 'isdex-68054.firebasestorage.app',
   );
+
 }
