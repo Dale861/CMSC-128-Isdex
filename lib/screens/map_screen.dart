@@ -12,7 +12,7 @@ class MapScreen extends StatefulWidget {
   const MapScreen({
     super.key,
     this.latitude,
-    this.longitude,
+    this.longitude,   
     this.fishName,
     this.fishId,
   });
@@ -273,10 +273,11 @@ class _MapScreenState extends State<MapScreen> {
           initialZoom: initialZoom,
         ),
         children: [
-          TileLayer(
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.example.isdex',
-          ),
+        TileLayer(
+          urlTemplate: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+          userAgentPackageName: 'com.example.isdex',
+        ),
+
           MarkerLayer(markers: markers),
         ],
       ),

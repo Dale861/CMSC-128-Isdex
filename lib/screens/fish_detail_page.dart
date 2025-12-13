@@ -250,9 +250,6 @@ class FishDetailPage extends StatelessWidget {
     return Row(
       children: [
         _buildTab('Information', true, () {}),
-        _buildTab('Gallery', false, () {
-          // TODO
-        }),
         _buildTab('Map', false, () {
           final String? fishId = fish['fishId']?.toString();
           if (fishId == null) {
