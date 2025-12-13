@@ -1,0 +1,180 @@
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
+
+class CommentsPage extends StatelessWidget {
+  final String postId;
+  const CommentsPage({super.key, required this.postId});
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = FirebaseDatabase.instance.ref('post_comments/$postId');
+    final currentUser = FirebaseAuth.instance.currentUser;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Comments')),
+      body: Column(
+        children: [
+          Expanded(
+            child: StreamBuilder(
+              stream: ref.onValue,
+              builder: (context, snapshot) {
+                if (!snapshot.hasData ||
+                    snapshot.data!.snapshot.value == null) {
+                  return const Center(
+                    child: Text(
+                      'No comments yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  );
+                }
+
+                final raw = Map<dynamic, dynamic>.from(
+                    snapshot.data!.snapshot.value as Map);
+
+                // Keep commentId so we can delete specific comment
+                final comments = raw.entries.toList()
+                  ..sort((a, b) =>
+                      (a.value['timePosted'] as int)
+                          .compareTo(b.value['timePosted'] as int));
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final commentId = comments[index].key;
+                    final c = comments[index].value;
+
+                    final bool isOwner =
+                        currentUser != null &&
+                        c['uid'] == currentUser.uid;
+
+                    return GestureDetector(
+                      onLongPress: isOwner
+                          ? () {
+                              _showDeleteCommentDialog(
+                                context,
+                                ref,
+                                commentId,
+                              );
+                            }
+                          : null,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: RichText(
+                          text: TextSpan(
+                            style:
+                                const TextStyle(color: Colors.black),
+                            children: [
+                              TextSpan(
+                                text: '${c['username']} ',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600),
+                              ),
+                              TextSpan(text: c['text']),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          _CommentInput(postId: postId),
+        ],
+      ),
+    );
+  }
+}
+
+/// ================= COMMENT INPUT =================
+class _CommentInput extends StatefulWidget {
+  final String postId;
+  const _CommentInput({required this.postId});
+
+  @override
+  State<_CommentInput> createState() => _CommentInputState();
+}
+
+class _CommentInputState extends State<_CommentInput> {
+  final controller = TextEditingController();
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    return Padding(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              decoration:
+                  const InputDecoration(hintText: 'Write a comment...'),
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send),
+            onPressed: () async {
+              if (user == null || controller.text.trim().isEmpty) return;
+
+              final ref = FirebaseDatabase.instance
+                  .ref('post_comments/${widget.postId}')
+                  .push();
+
+              await ref.set({
+                'uid': user.uid,
+                'username':
+                    user.email?.split('@')[0] ?? 'User',
+                'text': controller.text.trim(),
+                'timePosted': ServerValue.timestamp,
+              });
+
+              controller.clear();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// ================= DELETE CONFIRMATION =================
+void _showDeleteCommentDialog(
+  BuildContext context,
+  DatabaseReference commentsRef,
+  String commentId,
+) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Delete comment?'),
+      content: const Text(
+          'This action cannot be undone.'),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            await commentsRef.child(commentId).remove();
+            Navigator.pop(context);
+          },
+          child: const Text(
+            'Delete',
+            style: TextStyle(color: Colors.red),
+          ),
+        ),
+      ],
+    ),
+  );
+}
