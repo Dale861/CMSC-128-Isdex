@@ -1,6 +1,12 @@
+import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:image_picker/image_picker.dart';
+
 import 'login_page.dart';
 
 class CommunityPage extends StatelessWidget {
@@ -33,8 +39,6 @@ class CommunityPage extends StatelessWidget {
       body: const SafeArea(
         child: _FeedList(),
       ),
-
-      // + button: if not logged in -> login dialog; if logged in -> new post sheet
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final user = FirebaseAuth.instance.currentUser;
@@ -61,7 +65,7 @@ class _FeedList extends StatelessWidget {
         FirebaseDatabase.instance.ref().child('community_posts');
 
     return StreamBuilder<DatabaseEvent>(
-      stream: dbRef.onValue, // listen to all changes under /community_posts
+      stream: dbRef.onValue,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -77,15 +81,11 @@ class _FeedList extends StatelessWidget {
           );
         }
 
-        // Realtime DB returns a Map of key -> postData
         final raw = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-
-        // Convert entries to list and sort by timePosted (newest first)
         final entries = raw.entries.toList()
           ..sort((a, b) {
             final ma = a.value['timePosted'] ?? 0;
             final mb = b.value['timePosted'] ?? 0;
-            // descending
             return (mb as int).compareTo(ma as int);
           });
 
@@ -102,7 +102,7 @@ class _FeedList extends StatelessWidget {
               caption: data['caption'] ?? '',
               likes: (data['likes'] ?? 0).toString(),
               timeAgo: _timeAgoFromMillis(data['timePosted']),
-              imageUrl: (data['imageUrl'] ?? '') as String?,
+              imageBase64: (data['imageBase64'] ?? '') as String,
             );
           },
         );
@@ -119,7 +119,7 @@ class _PostItem extends StatelessWidget {
   final String caption;
   final String timeAgo;
   final String likes;
-  final String? imageUrl;
+  final String imageBase64;
 
   const _PostItem({
     required this.username,
@@ -128,11 +128,20 @@ class _PostItem extends StatelessWidget {
     required this.caption,
     required this.timeAgo,
     required this.likes,
-    required this.imageUrl,
+    required this.imageBase64,
   });
 
   @override
   Widget build(BuildContext context) {
+    Uint8List? imageBytes;
+    if (imageBase64.isNotEmpty) {
+      try {
+        imageBytes = base64Decode(imageBase64);
+      } catch (_) {
+        imageBytes = null;
+      }
+    }
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Card(
@@ -187,15 +196,15 @@ class _PostItem extends StatelessWidget {
               ),
             ),
 
-            // IMAGE AREA – main focus (network if available, grey placeholder otherwise)
+            // IMAGE AREA
             AspectRatio(
               aspectRatio: 4 / 3,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  if (imageUrl != null && imageUrl!.isNotEmpty)
-                    Image.network(
-                      imageUrl!,
+                  if (imageBytes != null)
+                    Image.memory(
+                      imageBytes,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
@@ -222,7 +231,6 @@ class _PostItem extends StatelessWidget {
                       ),
                     ),
 
-                  // Species chip on top-left, if provided
                   if (species.isNotEmpty)
                     Positioned(
                       left: 12,
@@ -252,7 +260,7 @@ class _PostItem extends StatelessWidget {
 
             const SizedBox(height: 6),
 
-            // ACTIONS: like + comment only (no share/bookmark)
+            // ACTIONS
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4),
               child: Row(
@@ -331,6 +339,10 @@ void _openCreatePostSheet(BuildContext context) {
       FirebaseDatabase.instance.ref().child('community_posts');
   final User? user = FirebaseAuth.instance.currentUser;
 
+  File? pickedImage;
+  String? base64Image;
+  bool isUploading = false;
+
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
@@ -338,136 +350,182 @@ void _openCreatePostSheet(BuildContext context) {
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
     builder: (context) {
-      return Padding(
-        padding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          top: 16,
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(100),
-                  ),
-                ),
-              ),
-              const Text(
-                'New post',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              // Image preview placeholder (we'll hook Storage later)
-              AspectRatio(
-                aspectRatio: 4 / 3,
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Icon(
-                      Icons.add_photo_alternate_outlined,
-                      size: 50,
-                      color: Colors.white70,
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(100),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 8),
-
-              OutlinedButton.icon(
-                onPressed: () {
-                  // TODO: integrate image picker + Firebase Storage later
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content:
-                          Text('Image upload not yet implemented (UI only).'),
+                  const Text(
+                    'New post',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
-                  );
-                },
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Select photo'),
-              ),
-              const SizedBox(height: 12),
+                  ),
+                  const SizedBox(height: 12),
 
-              TextField(
-                controller: captionController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Write a caption...',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
+                  // Image preview
+                  AspectRatio(
+                    aspectRatio: 4 / 3,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: pickedImage != null
+                          ? Image.file(
+                              pickedImage!,
+                              fit: BoxFit.cover,
+                            )
+                          : Container(
+                              color: Colors.grey[300],
+                              child: const Center(
+                                child: Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  size: 50,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    final caption = captionController.text.trim();
-
-                    if (caption.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Please add a caption.'),
-                        ),
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final XFile? xfile = await picker.pickImage(
+                        source: ImageSource.gallery,
+                        imageQuality: 50, // compress to keep b64 smaller
                       );
-                      return;
-                    }
+                      if (xfile == null) return;
 
-                    try {
-                      // Create a new child under /community_posts
-                      await dbRef.push().set({
-                        'caption': caption,
-                        'username':
-                            user?.email?.split('@')[0] ?? 'Anonymous user',
-                        'location': '', // can be filled later
-                        'species': '',  // can be filled later
-                        'likes': 0,
-                        'imageUrl': '', // for now no real image
-                        'timePosted': ServerValue.timestamp,
+                      final file = File(xfile.path);
+                      final bytes = await file.readAsBytes();
+                      final b64 = base64Encode(bytes);
+
+                      setState(() {
+                        pickedImage = file;
+                        base64Image = b64;
                       });
+                    },
+                    icon: const Icon(Icons.photo_library_outlined),
+                    label: const Text('Select photo'),
+                  ),
+                  const SizedBox(height: 12),
 
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Post published!'),
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Failed to post: $e'),
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('Post'),
-                ),
+                  TextField(
+                    controller: captionController,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'Write a caption...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isUploading
+                          ? null
+                          : () async {
+                              final caption = captionController.text.trim();
+
+                              if (caption.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Please add a caption.'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              if (base64Image == null ||
+                                  base64Image!.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content:
+                                        Text('Please select an image first.'),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              try {
+                                setState(() {
+                                  isUploading = true;
+                                });
+
+                                await dbRef.push().set({
+                                  'caption': caption,
+                                  'username': user?.email
+                                          ?.split('@')[0] ??
+                                      'Anonymous user',
+                                  'location': '',
+                                  'species': '',
+                                  'likes': 0,
+                                  'imageBase64': base64Image,
+                                  'timePosted': ServerValue.timestamp,
+                                });
+
+                                Navigator.of(context).pop();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Post published!'),
+                                  ),
+                                );
+                              } catch (e) {
+                                setState(() {
+                                  isUploading = false;
+                                });
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to post: $e'),
+                                  ),
+                                );
+                              }
+                            },
+                      child: isUploading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Post'),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       );
     },
   );
 }
 
-/// Login-required dialog (from your teammate) adapted to use here
+/// Login-required dialog
 void _showLoginPrompt(BuildContext context) {
   showDialog(
     context: context,
