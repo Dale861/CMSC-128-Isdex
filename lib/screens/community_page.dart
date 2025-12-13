@@ -8,6 +8,7 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'login_page.dart';
+import 'comments_page.dart';
 
 class CommunityPage extends StatelessWidget {
   const CommunityPage({super.key});
@@ -21,28 +22,13 @@ class CommunityPage extends StatelessWidget {
         elevation: 0.5,
         title: const Text(
           'Isdex Community',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
-        actions: [
-          IconButton(
-            onPressed: () {
-              // TODO: notifications page later
-            },
-            icon: const Icon(Icons.notifications_none, color: Colors.black),
-          ),
-        ],
       ),
-      body: const SafeArea(
-        child: _FeedList(),
-      ),
+      body: const SafeArea(child: _FeedList()),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           final user = FirebaseAuth.instance.currentUser;
-
           if (user == null) {
             _showLoginPrompt(context);
           } else {
@@ -55,54 +41,56 @@ class CommunityPage extends StatelessWidget {
   }
 }
 
-/// Feed list that listens to Realtime Database: /community_posts
+/// ================= FEED =================
 class _FeedList extends StatelessWidget {
   const _FeedList();
 
   @override
   Widget build(BuildContext context) {
-    final DatabaseReference dbRef =
-        FirebaseDatabase.instance.ref().child('community_posts');
+    final ref = FirebaseDatabase.instance.ref('community_posts');
 
     return StreamBuilder<DatabaseEvent>(
-      stream: dbRef.onValue,
+      stream: ref.onValue,
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
         if (!snapshot.hasData || snapshot.data!.snapshot.value == null) {
-          return const Center(
-            child: Text(
-              'No posts yet.\nBe the first to share!',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey),
-            ),
-          );
+          return const Center(child: Text('No posts yet'));
         }
 
-        final raw = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+        final raw = snapshot.data!.snapshot.value as Map;
         final entries = raw.entries.toList()
-          ..sort((a, b) {
-            final ma = a.value['timePosted'] ?? 0;
-            final mb = b.value['timePosted'] ?? 0;
-            return (mb as int).compareTo(ma as int);
-          });
+          ..sort((a, b) =>
+              (b.value['timePosted'] ?? 0)
+                  .compareTo(a.value['timePosted'] ?? 0));
 
         return ListView.builder(
           padding: const EdgeInsets.only(bottom: 80),
           itemCount: entries.length,
           itemBuilder: (context, index) {
+            final postId = entries[index].key;
             final data = Map<String, dynamic>.from(entries[index].value);
 
-            return _PostItem(
-              username: data['username'] ?? 'Unknown',
-              location: data['location'] ?? '',
-              species: data['species'] ?? '',
-              caption: data['caption'] ?? '',
-              likes: (data['likes'] ?? 0).toString(),
-              timeAgo: _timeAgoFromMillis(data['timePosted']),
-              imageBase64: (data['imageBase64'] ?? '') as String,
+            return StreamBuilder<DatabaseEvent>(
+              stream: FirebaseDatabase.instance
+                  .ref('post_comments/$postId')
+                  .onValue,
+              builder: (context, commentSnap) {
+                int commentCount = 0;
+                if (commentSnap.data?.snapshot.value != null) {
+                  commentCount =
+                      (commentSnap.data!.snapshot.value as Map).length;
+                }
+
+                return _PostItem(
+                  postId: postId,
+                  ownerUid: data['uid'],
+                  username: data['username'] ?? 'User',
+                  caption: data['caption'] ?? '',
+                  likes: data['likes'] ?? 0,
+                  commentCount: commentCount,
+                  timeAgo: _timeAgoFromMillis(data['timePosted']),
+                  imageBase64: data['imageBase64'] ?? '',
+                );
+              },
             );
           },
         );
@@ -111,244 +99,165 @@ class _FeedList extends StatelessWidget {
   }
 }
 
-/// Single post card – picture-focused, with like + comment only
+/// ================= POST CARD =================
 class _PostItem extends StatelessWidget {
+  final String postId;
+  final String? ownerUid;
   final String username;
-  final String location;
-  final String species;
   final String caption;
+  final int likes;
+  final int commentCount;
   final String timeAgo;
-  final String likes;
   final String imageBase64;
 
   const _PostItem({
+    required this.postId,
+    required this.ownerUid,
     required this.username,
-    required this.location,
-    required this.species,
     required this.caption,
-    required this.timeAgo,
     required this.likes,
+    required this.commentCount,
+    required this.timeAgo,
     required this.imageBase64,
   });
 
   @override
   Widget build(BuildContext context) {
-    Uint8List? imageBytes;
-    if (imageBase64.isNotEmpty) {
-      try {
-        imageBytes = base64Decode(imageBase64);
-      } catch (_) {
-        imageBytes = null;
-      }
-    }
+    Uint8List? imageBytes =
+        imageBase64.isNotEmpty ? base64Decode(imageBase64) : null;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Card(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-        ),
-        elevation: 2,
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TOP: username + location + menu
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 18,
-                    child: Icon(Icons.person, size: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          username,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                        if (location.isNotEmpty)
-                          Text(
-                            location,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      // TODO: options / report menu
-                    },
-                    icon: const Icon(Icons.more_horiz),
-                    splashRadius: 20,
-                  ),
-                ],
-              ),
-            ),
+    final user = FirebaseAuth.instance.currentUser;
 
-            // IMAGE AREA
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (imageBytes != null)
             AspectRatio(
               aspectRatio: 4 / 3,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (imageBytes != null)
-                    Image.memory(
-                      imageBytes,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 50,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  else
-                    Container(
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: Icon(
-                          Icons.image,
-                          size: 60,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ),
-
-                  if (species.isNotEmpty)
-                    Positioned(
-                      left: 12,
-                      top: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          species,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              child: Image.memory(imageBytes, fit: BoxFit.cover),
             ),
 
-            const SizedBox(height: 6),
+          Row(
+            children: [
+              StreamBuilder<DatabaseEvent>(
+                stream: user == null
+                    ? null
+                    : FirebaseDatabase.instance
+                        .ref('post_likes/$postId/${user.uid}')
+                        .onValue,
+                builder: (context, snap) {
+                  final isLiked =
+                      snap.data?.snapshot.exists ?? false;
 
-            // ACTIONS
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: Row(
-                children: [
-                  IconButton(
+                  return IconButton(
+                    icon: Icon(
+                      isLiked ? Icons.favorite : Icons.favorite_border,
+                      color: isLiked ? Colors.red : Colors.black,
+                    ),
                     onPressed: () {
-                      // TODO: implement like update in DB
+                      if (user == null) {
+                        _showLoginPrompt(context);
+                        return;
+                      }
+                      toggleLike(postId: postId, userId: user.uid);
                     },
-                    icon: const Icon(Icons.favorite_border, size: 24),
-                    splashRadius: 20,
-                  ),
-                  IconButton(
-                    onPressed: () {
-                      // TODO: open comments
-                    },
-                    icon: const Icon(Icons.mode_comment_outlined, size: 22),
-                    splashRadius: 20,
-                  ),
-                  const Spacer(),
-                ],
+                  );
+                },
               ),
-            ),
-
-            // LIKES + CAPTION + TIME
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12).copyWith(bottom: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$likes likes',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
+              IconButton(
+                icon: const Icon(Icons.mode_comment_outlined),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CommentsPage(postId: postId),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        color: Colors.black,
-                        fontSize: 14,
+                  );
+                },
+              ),
+              const Spacer(),
+              if (user != null && user.uid == ownerUid)
+                IconButton(
+                  icon: const Icon(Icons.more_horiz),
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (_) => ListTile(
+                        leading:
+                            const Icon(Icons.delete, color: Colors.red),
+                        title: const Text('Delete post'),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          final db = FirebaseDatabase.instance.ref();
+                          await db.child('community_posts/$postId').remove();
+                          await db.child('post_likes/$postId').remove();
+                          await db.child('post_comments/$postId').remove();
+                        },
                       ),
-                      children: [
-                        TextSpan(
-                          text: '$username ',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        TextSpan(text: caption),
-                      ],
-                    ),
+                    );
+                  },
+                ),
+            ],
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: [
+                Text('$likes likes',
+                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(width: 12),
+                Text('$commentCount comments',
+                    style: TextStyle(color: Colors.grey[700])),
+              ],
+            ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(color: Colors.black),
+                children: [
+                  TextSpan(
+                    text: '$username ',
+                    style:
+                        const TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    timeAgo,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey[600],
-                    ),
-                  ),
+                  TextSpan(text: caption),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: Text(
+              timeAgo,
+              style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// Bottom sheet for creating a NEW post -> writes to Realtime DB
+/// ================= CREATE POST =================
 void _openCreatePostSheet(BuildContext context) {
   final captionController = TextEditingController();
-  final DatabaseReference dbRef =
-      FirebaseDatabase.instance.ref().child('community_posts');
-  final User? user = FirebaseAuth.instance.currentUser;
+  final ref = FirebaseDatabase.instance.ref('community_posts');
+  final user = FirebaseAuth.instance.currentUser;
 
-  File? pickedImage;
+  File? imageFile;
   String? base64Image;
-  bool isUploading = false;
 
   showModalBottomSheet(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-    ),
     builder: (context) {
       return StatefulBuilder(
         builder: (context, setState) {
@@ -359,164 +268,56 @@ void _openCreatePostSheet(BuildContext context) {
               top: 16,
               bottom: MediaQuery.of(context).viewInsets.bottom + 16,
             ),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(100),
-                      ),
-                    ),
-                  ),
-                  const Text(
-                    'New post',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AspectRatio(
+                  aspectRatio: 4 / 3,
+                  child: imageFile != null
+                      ? Image.file(imageFile!, fit: BoxFit.cover)
+                      : Container(color: Colors.grey[300]),
+                ),
+                TextField(
+                  controller: captionController,
+                  decoration:
+                      const InputDecoration(hintText: 'Write a caption...'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final picker = ImagePicker();
+                    final picked = await picker.pickImage(
+                        source: ImageSource.gallery, imageQuality: 50);
+                    if (picked == null) return;
 
-                  // Image preview
-                  AspectRatio(
-                    aspectRatio: 4 / 3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: pickedImage != null
-                          ? Image.file(
-                              pickedImage!,
-                              fit: BoxFit.cover,
-                            )
-                          : Container(
-                              color: Colors.grey[300],
-                              child: const Center(
-                                child: Icon(
-                                  Icons.add_photo_alternate_outlined,
-                                  size: 50,
-                                  color: Colors.white70,
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                    final bytes =
+                        await File(picked.path).readAsBytes();
+                    setState(() {
+                      imageFile = File(picked.path);
+                      base64Image = base64Encode(bytes);
+                    });
+                  },
+                  child: const Text('Select Image'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (base64Image == null ||
+                        captionController.text.trim().isEmpty) return;
 
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      final picker = ImagePicker();
-                      final XFile? xfile = await picker.pickImage(
-                        source: ImageSource.gallery,
-                        imageQuality: 50, // compress to keep b64 smaller
-                      );
-                      if (xfile == null) return;
+                    await ref.push().set({
+                      'uid': user!.uid,
+                      'username':
+                          user.email?.split('@')[0] ?? 'User',
+                      'caption': captionController.text.trim(),
+                      'imageBase64': base64Image,
+                      'likes': 0,
+                      'timePosted': ServerValue.timestamp,
+                    });
 
-                      final file = File(xfile.path);
-                      final bytes = await file.readAsBytes();
-                      final b64 = base64Encode(bytes);
-
-                      setState(() {
-                        pickedImage = file;
-                        base64Image = b64;
-                      });
-                    },
-                    icon: const Icon(Icons.photo_library_outlined),
-                    label: const Text('Select photo'),
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextField(
-                    controller: captionController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Write a caption...',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: isUploading
-                          ? null
-                          : () async {
-                              final caption = captionController.text.trim();
-
-                              if (caption.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Please add a caption.'),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              if (base64Image == null ||
-                                  base64Image!.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content:
-                                        Text('Please select an image first.'),
-                                  ),
-                                );
-                                return;
-                              }
-
-                              try {
-                                setState(() {
-                                  isUploading = true;
-                                });
-
-                                await dbRef.push().set({
-                                  'caption': caption,
-                                  'username': user?.email
-                                          ?.split('@')[0] ??
-                                      'Anonymous user',
-                                  'location': '',
-                                  'species': '',
-                                  'likes': 0,
-                                  'imageBase64': base64Image,
-                                  'timePosted': ServerValue.timestamp,
-                                });
-
-                                Navigator.of(context).pop();
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Post published!'),
-                                  ),
-                                );
-                              } catch (e) {
-                                setState(() {
-                                  isUploading = false;
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to post: $e'),
-                                  ),
-                                );
-                              }
-                            },
-                      child: isUploading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('Post'),
-                    ),
-                  ),
-                ],
-              ),
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Post'),
+                ),
+              ],
             ),
           );
         },
@@ -525,11 +326,36 @@ void _openCreatePostSheet(BuildContext context) {
   );
 }
 
-/// Login-required dialog
+/// ================= LIKE LOGIC =================
+Future<void> toggleLike({
+  required String postId,
+  required String userId,
+}) async {
+  final db = FirebaseDatabase.instance.ref();
+  final likeRef = db.child('post_likes/$postId/$userId');
+  final countRef = db.child('community_posts/$postId/likes');
+
+  final snap = await likeRef.get();
+  if (snap.exists) {
+    await likeRef.remove();
+    await countRef.runTransaction((v) {
+      final cur = (v as int?) ?? 0;
+      return Transaction.success(cur > 0 ? cur - 1 : 0);
+    });
+  } else {
+    await likeRef.set(true);
+    await countRef.runTransaction((v) {
+      final cur = (v as int?) ?? 0;
+      return Transaction.success(cur + 1);
+    });
+  }
+}
+
+/// ================= HELPERS =================
 void _showLoginPrompt(BuildContext context) {
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
+    builder: (_) => AlertDialog(
       title: const Text('Login Required'),
       content: const Text('Please log in to use this feature.'),
       actions: [
@@ -552,14 +378,10 @@ void _showLoginPrompt(BuildContext context) {
   );
 }
 
-/// Helper to convert Realtime DB timestamp (millis) into '2h ago', '1d ago'
 String _timeAgoFromMillis(dynamic millis) {
-  if (millis == null) return '';
-  if (millis is! int) return '';
-
-  final dt = DateTime.fromMillisecondsSinceEpoch(millis);
-  final diff = DateTime.now().difference(dt);
-
+  if (millis == null || millis is! int) return '';
+  final diff = DateTime.now()
+      .difference(DateTime.fromMillisecondsSinceEpoch(millis));
   if (diff.inMinutes < 60) return '${diff.inMinutes}m ago';
   if (diff.inHours < 24) return '${diff.inHours}h ago';
   return '${diff.inDays}d ago';
