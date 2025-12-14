@@ -73,7 +73,7 @@ class FishDetailPage extends StatelessWidget {
                                 fish['imageUrl'].toString().isNotEmpty)
                             ? Image.asset(
                                 fish['imageUrl'],
-                                fit: BoxFit.contain,
+                                fit: BoxFit.fitWidth,
                                 width: double.infinity,
                                 height: 200,
                                 errorBuilder: (context, error, stackTrace) {
