@@ -73,7 +73,7 @@ class FishDetailPage extends StatelessWidget {
                                 fish['imageUrl'].toString().isNotEmpty)
                             ? Image.asset(
                                 fish['imageUrl'],
-                                fit: BoxFit.contain,
+                                fit: BoxFit.fitWidth,
                                 width: double.infinity,
                                 height: 200,
                                 errorBuilder: (context, error, stackTrace) {
@@ -250,9 +250,6 @@ class FishDetailPage extends StatelessWidget {
     return Row(
       children: [
         _buildTab('Information', true, () {}),
-        _buildTab('Gallery', false, () {
-          // TODO
-        }),
         _buildTab('Map', false, () {
           final String? fishId = fish['fishId']?.toString();
           if (fishId == null) {
