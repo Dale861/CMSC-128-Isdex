@@ -32,6 +32,10 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/ios
+/linux
+/macos
+pubspec.lock
 
 # Symbolication related
 app.*.symbols

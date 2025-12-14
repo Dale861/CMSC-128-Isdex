@@ -12,6 +12,19 @@ class AuthService {
   // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
+  String _emailKey(String email) =>
+      email.trim().toLowerCase().replaceAll('.', ',');
+
+  Future<bool> isEmailRegisteredInAppDb(String email) async {
+    final snap = await _db.child('userEmails').child(_emailKey(email)).get();
+    return snap.exists && snap.value != null; // one-time existence check
+  }
+
+  // call this in signUpWithEmail after writing /users/{uid}
+  Future<void> indexEmailForLookup(String email, String uid) async {
+    await _db.child('userEmails').child(_emailKey(email)).set(uid);
+  }
+
   // Sign up with email & password
   Future<User?> signUpWithEmail(String email, String password, String username) async {
     try {
@@ -24,13 +37,17 @@ class AuthService {
       
       // Store user data in Realtime Database
       if (user != null) {
+        final normalizedEmail = email.trim().toLowerCase();
+
         await _db.child('users').child(user.uid).set({
           'userId': user.uid,
           'username': username,
-          'email': email,
+          'email': normalizedEmail,
           'role': 'user',
           'createdAt': DateTime.now().millisecondsSinceEpoch,
         });
+
+        await indexEmailForLookup(normalizedEmail, user.uid);
       }
       
       return user;

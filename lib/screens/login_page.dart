@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'theme.dart';
 import 'signup_page.dart';
 import '../services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -60,25 +62,56 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleForgotPassword() async {
-    if (_emailController.text.trim().isEmpty) {
-      _showError('Please enter your email address');
+  final email = _emailController.text.trim().toLowerCase();
+
+  if (email.isEmpty) {
+    _showError('Please enter your email address');
+    return;
+  }
+
+  final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+$');
+  if (!emailRegex.hasMatch(email)) {
+    _showError('Please enter a valid email address');
+    return;
+  }
+
+  setState(() => _isLoading = true);
+
+  try {
+    final exists = await _authService.isEmailRegisteredInAppDb(email);
+    if (!exists) {
+      _showError('No account found with this email.');
       return;
     }
 
-    try {
-      await _authService.resetPassword(_emailController.text.trim());
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset email sent! Check your inbox.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      _showError('Failed to send reset email. Please check your email address.');
-    }
+    await _authService.resetPassword(email);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Password reset email sent! Check your inbox.'),
+        backgroundColor: Colors.green,
+      ),
+    );
+  } on FirebaseAuthException catch (e) {
+    if (!mounted) return;
+
+    final msg = switch (e.code) {
+      'invalid-email' => 'Invalid email address',
+      'too-many-requests' => 'Too many attempts. Try again later.',
+      'network-request-failed' => 'Network error. Check your connection.',
+      _ => 'Failed to send reset email. Please try again.',
+    };
+
+    _showError(msg);
+  } catch (_) {
+    if (!mounted) return;
+    _showError('Failed to send reset email. Please try again.');
+  } finally {
+    if (mounted) setState(() => _isLoading = false);
   }
+}
+
 
   String _getErrorMessage(String error) {
     if (error.contains('user-not-found')) {
