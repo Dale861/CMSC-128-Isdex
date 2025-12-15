@@ -121,20 +121,6 @@ class FishDetailPage extends StatelessWidget {
 
                     const SizedBox(height: 24),
 
-                    // Description
-                    _buildSectionHeader('Description'),
-                    const SizedBox(height: 8),
-                    Text(
-                      fish['information'] ?? 'No description available',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
                     // Size Range
                     _buildSectionHeader('Size Range'),
                     const SizedBox(height: 8),
