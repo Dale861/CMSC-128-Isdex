@@ -81,7 +81,7 @@ class _MapScreenState extends State<MapScreen> {
                     if (region.isNotEmpty)
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: Colors.white,
+                        // color: Colors.white,
                         child: Text(
                           region,
                           style: const TextStyle(
@@ -124,7 +124,7 @@ class _MapScreenState extends State<MapScreen> {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    color: Colors.white,
+                    // color: Colors.white,
                     child: Text(
                       widget.fishName!,
                       style: const TextStyle(
@@ -188,7 +188,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: Colors.white,
+                        // color: Colors.white,
                         child: Text(
                           fishData['commonName']?.toString() ?? 'Fish',
                           style: const TextStyle(
