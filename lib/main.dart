@@ -10,7 +10,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  await DatabaseInitService().initializeAllData();
+  //await DatabaseInitService().initializeAllData();
 
   runApp(const MyApp());
 }
