@@ -12,9 +12,11 @@ class CommentsPage extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
+      resizeToAvoidBottomInset: true, // ✅ IMPORTANT
       appBar: AppBar(title: const Text('Comments')),
       body: Column(
         children: [
+          /// ================= COMMENTS LIST =================
           Expanded(
             child: StreamBuilder(
               stream: ref.onValue,
@@ -30,23 +32,23 @@ class CommentsPage extends StatelessWidget {
                 }
 
                 final raw = Map<dynamic, dynamic>.from(
-                    snapshot.data!.snapshot.value as Map);
+                  snapshot.data!.snapshot.value as Map,
+                );
 
-                // Keep commentId so we can delete specific comment
                 final comments = raw.entries.toList()
-                  ..sort((a, b) =>
-                      (a.value['timePosted'] as int)
-                          .compareTo(b.value['timePosted'] as int));
+                  ..sort(
+                    (a, b) => (a.value['timePosted'] as int)
+                        .compareTo(b.value['timePosted'] as int),
+                  );
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final commentId = comments[index].key;
                     final c = comments[index].value;
 
-                    final bool isOwner =
-                        currentUser != null &&
+                    final bool isOwner = currentUser != null &&
                         c['uid'] == currentUser.uid;
 
                     return GestureDetector(
@@ -74,7 +76,8 @@ class CommentsPage extends StatelessWidget {
                               TextSpan(
                                 text: '${c['username']} ',
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w600),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               TextSpan(text: c['text']),
                             ],
@@ -87,6 +90,8 @@ class CommentsPage extends StatelessWidget {
               },
             ),
           ),
+
+          /// ================= COMMENT INPUT =================
           _CommentInput(postId: postId),
         ],
       ),
@@ -110,38 +115,51 @@ class _CommentInputState extends State<_CommentInput> {
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
-    return Padding(
-      padding: const EdgeInsets.all(8),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: controller,
-              decoration:
-                  const InputDecoration(hintText: 'Write a comment...'),
+    return SafeArea(
+      top: false, // ✅ Avoid system navigation bar
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 8,
+          top: 8,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: controller,
+                minLines: 1,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Write a comment...',
+                  border: OutlineInputBorder(),
+                ),
+              ),
             ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.send),
-            onPressed: () async {
-              if (user == null || controller.text.trim().isEmpty) return;
+            const SizedBox(width: 8),
+            IconButton(
+              icon: const Icon(Icons.send),
+              onPressed: () async {
+                if (user == null || controller.text.trim().isEmpty) return;
 
-              final ref = FirebaseDatabase.instance
-                  .ref('post_comments/${widget.postId}')
-                  .push();
+                final ref = FirebaseDatabase.instance
+                    .ref('post_comments/${widget.postId}')
+                    .push();
 
-              await ref.set({
-                'uid': user.uid,
-                'username':
-                    user.email?.split('@')[0] ?? 'User',
-                'text': controller.text.trim(),
-                'timePosted': ServerValue.timestamp,
-              });
+                await ref.set({
+                  'uid': user.uid,
+                  'username':
+                      user.email?.split('@')[0] ?? 'User',
+                  'text': controller.text.trim(),
+                  'timePosted': ServerValue.timestamp,
+                });
 
-              controller.clear();
-            },
-          ),
-        ],
+                controller.clear();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -157,8 +175,7 @@ void _showDeleteCommentDialog(
     context: context,
     builder: (_) => AlertDialog(
       title: const Text('Delete comment?'),
-      content: const Text(
-          'This action cannot be undone.'),
+      content: const Text('This action cannot be undone.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
