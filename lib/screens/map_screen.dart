@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'fish_detail_page.dart'; // Import the fish detail page
 
 class MapScreen extends StatefulWidget {
   final double? latitude;    // optional: single location mode
@@ -58,31 +59,41 @@ class _MapScreenState extends State<MapScreen> {
               (data['latitude'] as num?)?.toDouble() ?? 12.8797;
           final double lng =
               (data['longitude'] as num?)?.toDouble() ?? 121.7740;
+          final String region = data['region'] ?? 'Unknown';
 
           newMarkers.add(
             Marker(
               point: LatLng(lat, lng),
               width: 80,
               height: 80,
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: Colors.red,
-                    size: 40,
-                  ),
-                  if (widget.fishName != null)
-                    Text(
-                      widget.fishName!,
-                      style: const TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        backgroundColor: Colors.white,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              child: GestureDetector(
+                onTap: () {
+                  // Navigate to fish detail page when marker is clicked
+                  _navigateToFishDetail(widget.fishId!);
+                },
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      color: Colors.red,
+                      size: 40,
                     ),
-                ],
+                    if (region.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        color: Colors.white,
+                        child: Text(
+                          region,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           );
@@ -159,7 +170,15 @@ class _MapScreenState extends State<MapScreen> {
                 width: 80,
                 height: 80,
                 child: GestureDetector(
-                  onTap: () => _showFishDetails(fishData),
+                  onTap: () {
+                    // Navigate to fish detail page instead of showing popup
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => FishDetailPage(fish: fishData),
+                      ),
+                    );
+                  },
                   child: Column(
                     children: [
                       const Icon(
@@ -167,15 +186,18 @@ class _MapScreenState extends State<MapScreen> {
                         color: Colors.blue,
                         size: 40,
                       ),
-                      Text(
-                        fishData['commonName']?.toString() ?? 'Fish',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold,
-                          backgroundColor: Colors.white,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        color: Colors.white,
+                        child: Text(
+                          fishData['commonName']?.toString() ?? 'Fish',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -193,61 +215,23 @@ class _MapScreenState extends State<MapScreen> {
     });
   }
 
-  void _showFishDetails(Map<dynamic, dynamic> fish) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                fish['commonName']?.toString() ?? 'Unknown',
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text('Scientific: ${fish['scientificName'] ?? 'N/A'}'),
-              Text('Local Name: ${fish['localName'] ?? 'N/A'}'),
-              Text('Habitat: ${fish['habitat'] ?? 'N/A'}'),
-              Text('Info: ${fish['information'] ?? 'N/A'}'),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                  ),
-                  child: const Text(
-                    'Close',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ),
-            ],
+  // Helper method to navigate to fish detail page
+  void _navigateToFishDetail(String fishId) async {
+    final fishSnapshot = await _db.child('fish').child(fishId).once();
+    
+    if (fishSnapshot.snapshot.exists && fishSnapshot.snapshot.value != null) {
+      final Map<dynamic, dynamic> fishData =
+          fishSnapshot.snapshot.value as Map<dynamic, dynamic>;
+      
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => FishDetailPage(fish: fishData),
           ),
-        ),
-      ),
-    );
+        );
+      }
+    }
   }
 
   @override
@@ -265,6 +249,7 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: Text(widget.fishName ?? 'Fish Species Map'),
         backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
       ),
       body: FlutterMap(
         mapController: _mapController,
@@ -273,11 +258,10 @@ class _MapScreenState extends State<MapScreen> {
           initialZoom: initialZoom,
         ),
         children: [
-        TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-          userAgentPackageName: 'com.example.isdex',
-        ),
-
+          TileLayer(
+            urlTemplate: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+            userAgentPackageName: 'com.example.isdex',
+          ),
           MarkerLayer(markers: markers),
         ],
       ),
