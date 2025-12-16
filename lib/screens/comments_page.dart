@@ -12,13 +12,13 @@ class CommentsPage extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      resizeToAvoidBottomInset: true, // ✅ IMPORTANT
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(title: const Text('Comments')),
       body: Column(
         children: [
           /// ================= COMMENTS LIST =================
           Expanded(
-            child: StreamBuilder(
+            child: StreamBuilder<DatabaseEvent>(
               stream: ref.onValue,
               builder: (context, snapshot) {
                 if (!snapshot.hasData ||
@@ -45,44 +45,72 @@ class CommentsPage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
-                    final commentId = comments[index].key;
-                    final c = comments[index].value;
+                    final commentId = comments[index].key as String;
+                    final c = Map<dynamic, dynamic>.from(comments[index].value);
 
                     final bool isOwner = currentUser != null &&
                         c['uid'] == currentUser.uid;
 
-                    return GestureDetector(
-                      onLongPress: isOwner
-                          ? () {
-                              _showDeleteCommentDialog(
-                                context,
-                                ref,
-                                commentId,
-                              );
-                            }
-                          : null,
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: RichText(
-                          text: TextSpan(
-                            style:
-                                const TextStyle(color: Colors.black),
-                            children: [
-                              TextSpan(
-                                text: '${c['username']} ',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          /// Comment text
+                          Expanded(
+                            child: RichText(
+                              text: TextSpan(
+                                style: const TextStyle(color: Colors.black),
+                                children: [
+                                  TextSpan(
+                                    text: '${c['username'] ?? 'User'} ',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  TextSpan(text: '${c['text'] ?? ''}'),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          /// Visible delete option (only for owner)
+                          if (isOwner)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: TextButton(
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(0, 0),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                                onPressed: () {
+                                  _showDeleteCommentDialog(
+                                    context,
+                                    ref,
+                                    commentId,
+                                  );
+                                },
+                                child: const Text(
+                                  'Delete',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
-                              TextSpan(text: c['text']),
-                            ],
-                          ),
-                        ),
+                            ),
+                        ],
                       ),
                     );
                   },
@@ -116,7 +144,7 @@ class _CommentInputState extends State<_CommentInput> {
     final user = FirebaseAuth.instance.currentUser;
 
     return SafeArea(
-      top: false, 
+      top: false,
       child: Padding(
         padding: EdgeInsets.only(
           left: 12,
@@ -149,8 +177,7 @@ class _CommentInputState extends State<_CommentInput> {
 
                 await ref.set({
                   'uid': user.uid,
-                  'username':
-                      user.email?.split('@')[0] ?? 'User',
+                  'username': user.email?.split('@')[0] ?? 'User',
                   'text': controller.text.trim(),
                   'timePosted': ServerValue.timestamp,
                 });
