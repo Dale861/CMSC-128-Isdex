@@ -66,35 +66,43 @@ class _MapScreenState extends State<MapScreen> {
               point: LatLng(lat, lng),
               width: 80,
               height: 80,
-              child: GestureDetector(
-                onTap: () {
-                  // Navigate to fish detail page when marker is clicked
-                  _navigateToFishDetail(widget.fishId!);
-                },
-                child: Column(
-                  children: [
-                    const Icon(
-                      Icons.location_on,
-                      color: Colors.red,
-                      size: 40,
-                    ),
-                    if (region.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: Colors.white,
-                        child: Text(
-                          region,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
+          child: GestureDetector(
+            onTap: () {
+              // Already in FishDetailPage context; just show a hint or do nothing.
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    region.isNotEmpty
+                        ? 'Sightings in $region'
+                        : 'Sightings location',
+                  ),
                 ),
-              ),
+              );
+            },
+            child: Column(
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  color: Colors.red,
+                  size: 40,
+                ),
+                if (region.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    // color: Colors.white,
+                    child: Text(
+                      region,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
+          ),
             ),
           );
         });
@@ -124,7 +132,7 @@ class _MapScreenState extends State<MapScreen> {
                   Container(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    color: Colors.white,
+                    // color: Colors.white,
                     child: Text(
                       widget.fishName!,
                       style: const TextStyle(
@@ -175,6 +183,7 @@ class _MapScreenState extends State<MapScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
+                        settings: const RouteSettings(name: '/fishDetail'),
                         builder: (context) => FishDetailPage(fish: fishData),
                       ),
                     );
@@ -188,7 +197,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                        color: Colors.white,
+                        //color: Colors.white,
                         child: Text(
                           fishData['commonName']?.toString() ?? 'Fish',
                           style: const TextStyle(
@@ -249,7 +258,7 @@ class _MapScreenState extends State<MapScreen> {
       appBar: AppBar(
         title: Text(widget.fishName ?? 'Fish Species Map'),
         backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        // foregroundColor: Colors.white,
       ),
       body: FlutterMap(
         mapController: _mapController,
