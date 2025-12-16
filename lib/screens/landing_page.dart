@@ -107,37 +107,44 @@ void _showFishDetails(Map<dynamic, dynamic> fish) {
 
   void _showUserMenu() {
     User? user = FirebaseAuth.instance.currentUser;
-    
+
     showModalBottomSheet(
       context: context,
+      // make sure it respects safe areas on different devices
+      useSafeArea: true, // if available in your Flutter version
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.person, color: Colors.blue),
-              title: Text(user?.email ?? 'User'),
-              subtitle: const Text('Logged in'),
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Sign Out'),
-              onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Signed out successfully')),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+      builder: (context) {
+        final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+
+        return Padding(
+          // add exactly as much padding as the system bottom inset
+          padding: EdgeInsets.only(bottom: bottomPadding),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.person, color: Colors.blue),
+                title: Text(user?.email ?? 'User'),
+                subtitle: const Text('Logged in'),
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Sign Out'),
+                onTap: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Signed out successfully')),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
