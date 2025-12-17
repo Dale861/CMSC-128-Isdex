@@ -5,7 +5,7 @@ import 'community_page.dart';  // Add this import
 import 'fish_detail_page.dart';
 import 'login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
+import 'user_sightings_map_screen.dart';
 
 class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
@@ -105,48 +105,45 @@ void _showFishDetails(Map<dynamic, dynamic> fish) {
     );
   }
 
-  void _showUserMenu() {
-    User? user = FirebaseAuth.instance.currentUser;
+      void _showUserMenu() {
+      User? user = FirebaseAuth.instance.currentUser;
 
-    showModalBottomSheet(
-      context: context,
-      // make sure it respects safe areas on different devices
-      useSafeArea: true, // if available in your Flutter version
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
-
-        return Padding(
-          // add exactly as much padding as the system bottom inset
-          padding: EdgeInsets.only(bottom: bottomPadding),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.person, color: Colors.blue),
-                title: Text(user?.email ?? 'User'),
-                subtitle: const Text('Logged in'),
-              ),
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: const Text('Sign Out'),
-                onTap: () async {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Signed out successfully')),
-                  );
-                },
-              ),
-            ],
+      showModalBottomSheet(
+        context: context,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (context) => SafeArea(
+          minimum: const EdgeInsets.only(bottom: 8),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.person, color: Colors.blue),
+                  title: Text(user?.email ?? 'User'),
+                  subtitle: const Text('Logged in'),
+                ),
+                const Divider(),
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: const Text('Sign Out'),
+                  onTap: () async {
+                    await FirebaseAuth.instance.signOut();
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Signed out successfully')),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
-        );
-      },
-    );
-  }
+        ),
+      );
+    }
+
 
   @override
   Widget build(BuildContext context) {
@@ -399,7 +396,7 @@ void _showFishDetails(Map<dynamic, dynamic> fish) {
                         onPressed: () {},
                         icon: const Icon(Icons.home, color: Colors.blue, size: 28),
                       ),
-                      
+
                       // Community Button (Only for logged-in users)
                       if (isLoggedIn)
                         IconButton(
@@ -413,17 +410,37 @@ void _showFishDetails(Map<dynamic, dynamic> fish) {
                           },
                           icon: Icon(Icons.people, color: Colors.grey[400], size: 28),
                         ),
-                      
-                      // Map Button (Always visible)
+
+                      // Dev-verified Map Button (Always visible)
                       IconButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const MapScreen()),
+                              builder: (context) => const MapScreen(),
+                            ),
                           );
                         },
                         icon: Icon(Icons.map, color: Colors.grey[400], size: 28),
+                        tooltip: 'Reference map',
+                      ),
+
+                      // User Sightings Map (View for guests, contribute when logged in)
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const UserSightingsMapScreen(),
+                            ),
+                          );
+                        },
+                        icon: Icon(
+                          Icons.location_on,
+                          color: isLoggedIn ? Colors.grey : Colors.grey[400],
+                          size: 28,
+                        ),
+                        tooltip: isLoggedIn ? 'User sightings (add & view)' : 'User sightings (view only)',
                       ),
                     ],
                   );
