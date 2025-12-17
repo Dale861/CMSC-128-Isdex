@@ -18,7 +18,7 @@ class CommentsPage extends StatelessWidget {
         children: [
           /// ================= COMMENTS LIST =================
           Expanded(
-            child: StreamBuilder<DatabaseEvent>(
+            child: StreamBuilder(
               stream: ref.onValue,
               builder: (context, snapshot) {
                 if (!snapshot.hasData ||
@@ -45,8 +45,8 @@ class CommentsPage extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
-                    final commentId = comments[index].key as String;
-                    final c = Map<dynamic, dynamic>.from(comments[index].value);
+                    final commentId = comments[index].key;
+                    final c = comments[index].value;
 
                     final bool isOwner = currentUser != null &&
                         c['uid'] == currentUser.uid;
@@ -61,52 +61,42 @@ class CommentsPage extends StatelessWidget {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          /// Comment text
+                          /// COMMENT TEXT
                           Expanded(
                             child: RichText(
                               text: TextSpan(
-                                style: const TextStyle(color: Colors.black),
+                                style:
+                                    const TextStyle(color: Colors.black),
                                 children: [
                                   TextSpan(
-                                    text: '${c['username'] ?? 'User'} ',
+                                    text: '${c['username']} ',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  TextSpan(text: '${c['text'] ?? ''}'),
+                                  TextSpan(text: c['text']),
                                 ],
                               ),
                             ),
                           ),
 
-                          /// Visible delete option (only for owner)
+                          /// DELETE OPTION (ONLY FOR OWNER)
                           if (isOwner)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: TextButton(
-                                style: TextButton.styleFrom(
-                                  minimumSize: const Size(0, 0),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  tapTargetSize:
-                                      MaterialTapTargetSize.shrinkWrap,
-                                ),
-                                onPressed: () {
-                                  _showDeleteCommentDialog(
-                                    context,
-                                    ref,
-                                    commentId,
-                                  );
-                                },
-                                child: const Text(
-                                  'Delete',
-                                  style: TextStyle(
-                                    color: Colors.red,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                            InkWell(
+                              onTap: () {
+                                _showDeleteCommentDialog(
+                                  context,
+                                  ref,
+                                  commentId,
+                                );
+                              },
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.only(left: 6),
+                                child: Icon(
+                                  Icons.more_vert,
+                                  size: 18,
+                                  color: Colors.grey[600],
                                 ),
                               ),
                             ),
@@ -169,7 +159,9 @@ class _CommentInputState extends State<_CommentInput> {
             IconButton(
               icon: const Icon(Icons.send),
               onPressed: () async {
-                if (user == null || controller.text.trim().isEmpty) return;
+                if (user == null || controller.text.trim().isEmpty) {
+                  return;
+                }
 
                 final ref = FirebaseDatabase.instance
                     .ref('post_comments/${widget.postId}')
@@ -177,7 +169,8 @@ class _CommentInputState extends State<_CommentInput> {
 
                 await ref.set({
                   'uid': user.uid,
-                  'username': user.email?.split('@')[0] ?? 'User',
+                  'username':
+                      user.email?.split('@')[0] ?? 'User',
                   'text': controller.text.trim(),
                   'timePosted': ServerValue.timestamp,
                 });
